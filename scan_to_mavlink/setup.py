@@ -24,7 +24,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
-        'fake_obstacle_3d = scan_to_mavlink.fake_obstacle_3d:main',
+        'scan_to_mavlink_node = scan_to_mavlink.scan_to_mavlink_node:main',
         ],
     },
 )
