@@ -2,7 +2,7 @@
 name = "obstacle-detection"
 version = "0.1.0"
 description = "Obstacle detection using ZED camera and point cloud clustering"
-requires-python = ">=3.9"  # Bumped from 3.8 due to setuptools security constraint
+requires-python = ">=3.9"  # setuptools >=78.1.1 (security fix) requires Python 3.9+
 dependencies = [
     "numpy",
     "open3d",
