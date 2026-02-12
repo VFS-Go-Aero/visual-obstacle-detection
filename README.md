@@ -1,6 +1,21 @@
 # bash-commands
 
-Start connection - ros2 launch mavros apm.launch fcu_url:=///dev/ttyUSB0:57600 
+**Build Package:**
+```bash
+colcon build --packages-select scan_to_mavlink
+```
+
+**Start Connection:** 
+```bash
+ros2 launch mavros apm.launch fcu_url:=///dev/ttyUSB0:57600 
+
+ros2 launch mavros apm.launch.py fcu_url:=/dev/ttyUSB0:57600 gcs_url:=udp://@XX.XXX.XXX.X:14550
+```
+ros2 node list
+
+ros2 run scan_to_mavlink scan_to_mavlink_node
+
+ros2 topic list 
 
 Set mode - ros2 service call /mavros/set_mode mavros_msgs/srv/SetMode "{base_mode: 0, custom_mode: 'STABILIZE'}"
 
