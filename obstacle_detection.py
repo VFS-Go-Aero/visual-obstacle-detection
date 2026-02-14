@@ -62,7 +62,9 @@ def main():
             if timer % 30 == 0:
                 zed.request_spatial_map_async()
     
-            # Retrieve spatial_map when ready
+            # Retrieve spatial_map when ready.
+            # Note: timer > 0 intentionally skips retrieval on frame 0. The first request is sent at
+            # timer == 0, and retrieval is deferred to subsequent frames once the async request is ready.
             if zed.get_spatial_map_request_status_async() == sl.ERROR_CODE.SUCCESS and timer > 0:
                 # Get the updated point cloud
                 zed.retrieve_spatial_map_async(point_cloud)
