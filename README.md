@@ -1,11 +1,37 @@
 # bash-commands
 
+## Stereocam
+
+**Inspect Camera Outputs**
+```bash
+ZED_Explorer
+```
+
+**Launch Single Camera** 
+```bash
+ros2 launch zed_wrapper zed_camera.launch.py camera_model:=zedx
+```
+
+**Launch Dual Cameras**
+```bash
+ros2 launch launch_files multi_zed.launch.py
+```
+
+**Run Pointcloud Viz**
+```bash
+ros2 run rviz2 rviz2
+```
+
+then, do add > nodes > zed > poincloud2 to view each.
+
 **Build Package:**
 ```bash
 colcon build --packages-select scan_to_mavlink
 ```
 
-**Start Connection:** 
+## Mavros
+
+**Start Mavlink Connection:** 
 ```bash
 ros2 launch mavros apm.launch fcu_url:=///dev/ttyUSB0:57600 
 
