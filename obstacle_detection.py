@@ -94,12 +94,12 @@ def main():
                 #    selected_points.append([x, y, z])
                 
                 # Filter points within safety zone using vectorized operations
-                # Keep points where x, y, z < safety AND distance from origin < safety
+                # Keep points where x, y, z < safety AND distance from origin <= safety
                 mask = (
                     (xyz[:, 0] < safety) &
                     (xyz[:, 1] < safety) &
                     (xyz[:, 2] < safety) &
-                    ((xyz ** 2).sum(axis=1) < safety_sq)
+                    ((xyz ** 2).sum(axis=1) <= safety_sq)
                 )
                 selected_points = xyz[mask]
 
@@ -125,13 +125,13 @@ def main():
                         print("No clusters detected (all points are noise).")
                     else:
                         num_objects = len(valid_labels)
-                        print("Detected " + str(num_objects) + " objects")
+                        print(f"Detected {num_objects} objects")
 
                         # Calculate and print centroid for each detected object
                         for idx, label in enumerate(valid_labels):
                             cluster_points = np.asarray(pcd.points)[labels == label]
                             centroid = cluster_points.mean(axis=0)
-                            print("Object " + str(idx) + ": centroid " + str(centroid))
+                            print(f"Object {idx}: centroid {centroid}")
             # Increment frame counter
             timer += 1
 
