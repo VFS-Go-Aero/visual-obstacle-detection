@@ -93,10 +93,13 @@ def main():
                 
                 # Filter points within safety zone using vectorized operations
                 # Keep points where x, y, z < safety AND distance from origin < safety
-                selected_points = np.array([point for point in xyz 
-                                if point[0] < safety and point[1] < safety and point[2] < safety 
-                                and (point[0]**2 + point[1]**2 + point[2]**2) < safety_sq],
-                               dtype=np.float32)
+                mask = (
+                    (xyz[:, 0] < safety) &
+                    (xyz[:, 1] < safety) &
+                    (xyz[:, 2] < safety) &
+                    ((xyz ** 2).sum(axis=1) < safety_sq)
+                )
+                selected_points = xyz[mask].astype(np.float32, copy=False)
 
                 # Create Open3D point cloud for clustering
                 pcd = o3d.geometry.PointCloud()
