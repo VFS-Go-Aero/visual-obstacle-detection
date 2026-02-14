@@ -99,7 +99,7 @@ def main():
                     (xyz[:, 2] < safety) &
                     ((xyz ** 2).sum(axis=1) < safety_sq)
                 )
-                selected_points = xyz[mask].astype(np.float32, copy=False)
+                selected_points = xyz[mask]
 
                 # If no points remain after filtering, skip clustering for this frame
                 if selected_points.size == 0:
