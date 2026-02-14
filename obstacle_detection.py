@@ -108,7 +108,7 @@ def main():
                 with o3d.utility.VerbosityContextManager(o3d.utility.VerbosityLevel.Error) as cm:
                     labels = np.array(pcd.cluster_dbscan(eps=0.2, min_points=10))
 
-                # Calculate number of detected objects (excluding noise label -1)
+                # Calculate number of detected clusters: labels 0..max are clusters, -1 is noise (gives 0 if all points are noise)
                 num_objects = labels.max() + 1
                 print("Detected " + str(num_objects) + " objects")
 
