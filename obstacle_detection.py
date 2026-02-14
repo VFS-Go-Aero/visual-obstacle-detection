@@ -115,16 +115,21 @@ def main():
                     with o3d.utility.VerbosityContextManager(o3d.utility.VerbosityLevel.Error) as cm:
                         labels = np.array(pcd.cluster_dbscan(eps=0.2, min_points=10))
 
-                    # Calculate number of detected objects (excluding noise label -1)
-                    num_objects = labels.max() + 1
-                    print("Detected " + str(num_objects) + " objects")
+                    # Calculate number of detected objects, excluding noise label -1
+                    unique_labels = np.unique(labels)
+                    valid_labels = unique_labels[unique_labels >= 0]
 
-                    # Calculate and print centroid for each detected object
-                    for i in range(num_objects):
-                        cluster_points = np.asarray(pcd.points)[labels == i]
-                        centroid = cluster_points.mean(axis=0)
-                        print("Object " + str(i) + ": centroid " + str(centroid))
+                    if valid_labels.size == 0:
+                        print("No clusters detected (all points are noise).")
+                    else:
+                        num_objects = len(valid_labels)
+                        print("Detected " + str(num_objects) + " objects")
 
+                        # Calculate and print centroid for each detected object
+                        for idx, label in enumerate(valid_labels):
+                            cluster_points = np.asarray(pcd.points)[labels == label]
+                            centroid = cluster_points.mean(axis=0)
+                            print("Object " + str(idx) + ": centroid " + str(centroid))
             # Increment frame counter
             timer += 1
 
