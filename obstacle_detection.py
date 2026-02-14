@@ -101,25 +101,29 @@ def main():
                 )
                 selected_points = xyz[mask].astype(np.float32, copy=False)
 
-                # Create Open3D point cloud for clustering
-                pcd = o3d.geometry.PointCloud()
-                pcd.points = o3d.utility.Vector3dVector(selected_points)
+                # If no points remain after filtering, skip clustering for this frame
+                if selected_points.size == 0:
+                    print("No points within safety zone; skipping clustering for this frame.")
+                else:
+                    # Create Open3D point cloud for clustering
+                    pcd = o3d.geometry.PointCloud()
+                    pcd.points = o3d.utility.Vector3dVector(selected_points)
 
-                # Perform DBSCAN clustering to identify distinct objects
-                # eps=0.2: maximum distance between points in a cluster (20cm)
-                # min_points=10: minimum points required to form a cluster
-                with o3d.utility.VerbosityContextManager(o3d.utility.VerbosityLevel.Error) as cm:
-                    labels = np.array(pcd.cluster_dbscan(eps=0.2, min_points=10))
+                    # Perform DBSCAN clustering to identify distinct objects
+                    # eps=0.2: maximum distance between points in a cluster (20cm)
+                    # min_points=10: minimum points required to form a cluster
+                    with o3d.utility.VerbosityContextManager(o3d.utility.VerbosityLevel.Error) as cm:
+                        labels = np.array(pcd.cluster_dbscan(eps=0.2, min_points=10))
 
-                # Calculate number of detected clusters: labels 0..max are clusters, -1 is noise (gives 0 if all points are noise)
-                num_objects = labels.max() + 1
-                print("Detected " + str(num_objects) + " objects")
+                    # Calculate number of detected objects (excluding noise label -1)
+                    num_objects = labels.max() + 1
+                    print("Detected " + str(num_objects) + " objects")
 
-                # Calculate and print centroid for each detected object
-                for i in range(num_objects):
-                    cluster_points = np.asarray(pcd.points)[labels == i]
-                    centroid = cluster_points.mean(axis=0)
-                    print("Object " + str(i) + ": centroid " + str(centroid))
+                    # Calculate and print centroid for each detected object
+                    for i in range(num_objects):
+                        cluster_points = np.asarray(pcd.points)[labels == i]
+                        centroid = cluster_points.mean(axis=0)
+                        print("Object " + str(i) + ": centroid " + str(centroid))
 
             # Increment frame counter
             timer += 1
