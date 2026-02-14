@@ -18,8 +18,9 @@ def main():
     init_params.coordinate_units = sl.UNIT.METER # Set units in meters
 
     # Attempt to open the camera
-    if zed.open(init_params) != sl.ERROR_CODE.SUCCESS:
-        print("Failed to open ZED camera")
+    err = zed.open(init_params)
+    if err != sl.ERROR_CODE.SUCCESS:
+        print(f"Failed to open ZED camera: {err}")
         sys.exit(1)
 
     # Configure positional tracking parameters
@@ -27,8 +28,9 @@ def main():
     tracking_params.set_as_static = False  # Camera is moving, not static
 
     # Enable positional tracking for spatial mapping
-    if zed.enable_positional_tracking(tracking_params) != sl.ERROR_CODE.SUCCESS:
-        print("Failed to enable tracking")
+    err = zed.enable_positional_tracking(tracking_params)
+    if err != sl.ERROR_CODE.SUCCESS:
+        print(f"Failed to enable tracking: {err}")
         zed.close()
         sys.exit(1)
 
@@ -41,8 +43,9 @@ def main():
     mapping_parameters.use_chunk_only = True  # Use chunked spatial mapping
 
     # Enable spatial mapping with configured parameters
-    if zed.enable_spatial_mapping(mapping_parameters) != sl.ERROR_CODE.SUCCESS:
-        print("Failed to enable spatial mapping")
+    err = zed.enable_spatial_mapping(mapping_parameters)
+    if err != sl.ERROR_CODE.SUCCESS:
+        print(f"Failed to enable spatial mapping: {err}")
         zed.close()
         sys.exit(1)
 
