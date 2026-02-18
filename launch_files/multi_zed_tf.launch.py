@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import os
 from launch import LaunchDescription
 from launch.actions import IncludeLaunchDescription
@@ -52,8 +53,8 @@ def generate_launch_description():
         arguments=[
             '0.0', '0.0', '0.05',       # 5cm above zed1
             '0.0', '0.0', '3.1416',     # 180deg yaw
-            'zed1_left_camera_frame',   # parent
-            'zed2_left_camera_frame'    # child
+            'zed1_camera_link',   # parent (root of zed1 TF tree)
+            'zed2_camera_link'    # child (root of zed2 TF tree)
         ]
     )
 
