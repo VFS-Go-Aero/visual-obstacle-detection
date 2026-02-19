@@ -1,5 +1,16 @@
 # bash-commands
 
+## Distance Sensor
+
+```ros2 topic pub /mavros/rangefinder_sub sensor_msgs/Range "{
+  header: {stamp: {sec: 0, nanosec: 0}, frame_id: 'rangefinder'},
+  radiation_type: 1,
+  field_of_view: 0.1,
+  min_range: 0.2,
+  max_range: 50.0,
+  range: 5.0
+}"```
+
 ## Stereocam
 
 **Inspect Camera Outputs**
