@@ -58,4 +58,4 @@ def generate_launch_description():
     ]
     )
 
-    return LaunchDescription([cam1, cam2, static_tf])
+    return LaunchDescription([cam1, cam2, static_tf]) 
