@@ -22,11 +22,12 @@ ros2 launch launch_files multi_zed.launch.py
 ros2 run rviz2 rviz2
 ```
 
-then, do add > nodes > zed > poincloud2 to view each.
+then, do add > by topic > /zed1/point_cloud/cloud_registered/PointCloud2
 
 **Build Package:**
 ```bash
 colcon build --packages-select scan_to_mavlink
+colcon build --packages-select launch_files
 ```
 
 ## Mavros
@@ -36,6 +37,8 @@ colcon build --packages-select scan_to_mavlink
 ros2 launch mavros apm.launch fcu_url:=///dev/ttyUSB0:57600 
 
 ros2 launch mavros apm.launch.py fcu_url:=/dev/ttyUSB0:57600 gcs_url:=udp://@XX.XXX.XXX.X:14550
+ros2 launch mavros apm.launch fcu_url:=/dev/ttyUSB0:57600 gcs_url:=udp://@XX.XXX.XXX.X:14550
+
 ```
 ros2 node list
 
