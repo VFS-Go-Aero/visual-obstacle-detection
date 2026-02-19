@@ -51,8 +51,8 @@ def generate_launch_description():
         executable='static_transform_publisher',
         name='zed2_offset_tf',
         arguments=[
-        '0.0', '0.0', '0.05',
-        '0.0', '0.0', '3.1416',
+        '0.0', '-0.31', '0.0',
+        '0.0', '0.0', '0.0',
         'zed1_camera_link',   # parent (root of zed1 tree)
         'zed2_camera_link'    # child (root of zed2 tree)
     ]
