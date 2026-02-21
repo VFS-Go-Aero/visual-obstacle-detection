@@ -51,11 +51,11 @@ def generate_launch_description():
         executable='static_transform_publisher',
         name='zed2_offset_tf',
         arguments=[
-            '0.0', '0.0', '0.0',    # 5cm above zed1
-            '0.0', '0.0', '0.0',    # 180deg yaw
-            'zed1_camera_link',    # parent (root of zed1 TF tree)
-            'zed2_camera_link'    # child (root of zed2 TF tree)
-        ]
+        '0.0', '-0.31', '0.0',
+        '0.0', '0.0', '0.0',
+        'zed1_camera_link',   # parent (root of zed1 tree)
+        'zed2_camera_link'    # child (root of zed2 tree)
+    ]
     )
 
     return LaunchDescription([cam1, cam2, static_tf]) 
