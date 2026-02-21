@@ -1,6 +1,6 @@
 from setuptools import setup
 
-package_name = 'my_first_pkg'
+package_name = "visual_obstacle_detection"
 
 setup(
     name=package_name,
@@ -15,12 +15,12 @@ setup(
     zip_safe=True,
     maintainer='root',
     maintainer_email='root@todo.todo',
-    description='My first ROS 2 package',
+    description="Visual Obstacle Detection package",
     license='MIT',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'publisher = my_first_pkg.publisher:main',
+            'publisher = visual_obstacle_detection.publisher:main',
         ],
     },
 )
