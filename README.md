@@ -1,15 +1,34 @@
 # bash-commands
 
-## Distance Sensor
+## Downwards Rangefinder
 
-```ros2 topic pub /mavros/rangefinder_sub sensor_msgs/Range "{
+```bash
+ros2 topic pub /mavros/rangefinder_sub sensor_msgs/Range "{
   header: {stamp: {sec: 0, nanosec: 0}, frame_id: 'rangefinder'},
   radiation_type: 1,
   field_of_view: 0.1,
   min_range: 0.2,
   max_range: 50.0,
   range: 5.0
-}"```
+}"
+```
+
+## LaserScan
+
+```bash
+ros2 topic pub /mavros/obstacle/send sensor_msgs/msg/LaserScan "{
+  header: {stamp: {sec: 0, nanosec: 0}, frame_id: 'base_link'},
+  angle_min: -3.14159,
+  angle_max: 3.14159,
+  angle_increment: 0.017453,
+  time_increment: 0.0,
+  scan_time: 0.1,
+  range_min: 0.2,
+  range_max: 50.0,
+  ranges: [5.0, 5.0, 5.0, 5.0, 5.0]
+}"
+```
+
 
 ## Stereocam
 
