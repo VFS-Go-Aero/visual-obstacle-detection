@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-Point Cloud Store — subscribes to the registered point cloud topics
-published by two ZED X cameras (zed1, zed2) via the ZED ROS 2 wrapper,
-converts each incoming PointCloud2 message into a NumPy array of (x, y, z)
-points, and keeps the latest cloud for each camera in memory.
+Point Cloud — subscribes to the registered point cloud topics published by
+two ZED X cameras (zed1, zed2) via the ZED ROS 2 wrapper, converts each
+incoming PointCloud2 message into a NumPy array of (x, y, z) points, and
+maintains a single merged cloud from both cameras.
 
-Run:  python3 point_cloud_store.py   (with cameras already launched)
+Run:  python3 point_cloud.py   (with cameras already launched)
 """
 
 import rclpy
@@ -16,38 +16,50 @@ from sensor_msgs_py import point_cloud2  # ROS 2 helper to iterate PointCloud2 f
 
 
 class PointCloud(Node):
-    # Names of the two ZED X cameras (must match the launch file camera_name args)
-    CAMERAS = ["zed1", "zed2"]
 
     def __init__(self):
         super().__init__("point_cloud")
 
-        # Dictionary holding the latest point cloud for each camera.
-        # Each value is either None (no data yet) or an (N, 3) float32 NumPy array.
-        self.clouds = {c: None for c in self.CAMERAS}
+        # Latest (N, 3) float32 array from each camera, starts empty.
+        self._cloud1 = np.empty((0, 3), dtype=np.float32)
+        self._cloud2 = np.empty((0, 3), dtype=np.float32)
 
-        # Subscribe to each camera's registered (world-frame) point cloud topic.
-        for cam in self.CAMERAS:
-            self.create_subscription(
-                PointCloud2,
-                f"/{cam}/zed_node/point_cloud/cloud_registered",
-                # Default lambda capture trick: c=cam ensures each callback
-                # closes over its own camera name rather than sharing the loop var.
-                lambda msg, c=cam: self._cb(msg, c),
-                10,  # QoS queue depth
-            )
+        # Merged cloud from both cameras — always up to date.
+        self.cloud = np.empty((0, 3), dtype=np.float32)
 
-    def _cb(self, msg, cam):
-        """Called every time a new point cloud is published for *cam*.
+        # Explicit subscriptions — no loop, no dictionary.
+        self.create_subscription(
+            PointCloud2,
+            "/zed1/zed_node/point_cloud/cloud_registered",
+            self._cb_zed1,
+            10,
+        )
+        self.create_subscription(
+            PointCloud2,
+            "/zed2/zed_node/point_cloud/cloud_registered",
+            self._cb_zed2,
+            10,
+        )
 
-        Extracts only the (x, y, z) fields, drops NaN points (invalid depth),
-        and overwrites the stored cloud so it always reflects the latest frame.
-        """
-        self.clouds[cam] = np.array(
+    def _parse(self, msg):
+        """Extract (x, y, z) points from a PointCloud2 message, dropping NaNs."""
+        return np.array(
             list(point_cloud2.read_points(msg, field_names=("x", "y", "z"), skip_nans=True)),
             dtype=np.float32,
         )
-        self.get_logger().info(f"[{cam}] {self.clouds[cam].shape[0]} pts")
+
+    def _merge(self):
+        """Concatenate the two camera clouds into self.cloud."""
+        self.cloud = np.concatenate((self._cloud1, self._cloud2), axis=0)
+        self.get_logger().info(f"merged cloud: {self.cloud.shape[0]} pts")
+
+    def _cb_zed1(self, msg):
+        self._cloud1 = self._parse(msg)
+        self._merge()
+
+    def _cb_zed2(self, msg):
+        self._cloud2 = self._parse(msg)
+        self._merge()
 
 
 def main():
