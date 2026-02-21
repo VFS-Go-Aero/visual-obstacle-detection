@@ -15,12 +15,12 @@ import numpy as np
 from sensor_msgs_py import point_cloud2  # ROS 2 helper to iterate PointCloud2 fields
 
 
-class PointCloudStore(Node):
+class PointCloud(Node):
     # Names of the two ZED X cameras (must match the launch file camera_name args)
     CAMERAS = ["zed1", "zed2"]
 
     def __init__(self):
-        super().__init__("point_cloud_store")
+        super().__init__("point_cloud")
 
         # Dictionary holding the latest point cloud for each camera.
         # Each value is either None (no data yet) or an (N, 3) float32 NumPy array.
