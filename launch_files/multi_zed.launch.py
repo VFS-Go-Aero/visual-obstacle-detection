@@ -13,9 +13,9 @@ def generate_launch_description():
     """Build a launch description for multi-camera ZED setup."""
     # Path to the multi-camera launch file
     multi_camera_launch_file = os.path.join(
-        get_package_share_directory('zed_multi_camera'),
-        'launch',
-        'zed_multi_camera.launch.py'
+        get_package_share_directory("zed_multi_camera"),
+        "launch",
+        "zed_multi_camera.launch.py"
     )
 
     # Include the multi-camera launch with your parameters
@@ -24,11 +24,11 @@ def generate_launch_description():
             multi_camera_launch_file
         ),
         launch_arguments={
-            'cam_names': '[zed1,zed2]',
-            'cam_models': '[zedx, zedx]',  # Adjust if different
-            'cam_serials': '[44659546,42203370]',
-            'cam_resolutions': '[HD720,HD720]',  # Lower res
-            'cam_framerates': '[15,15]',  # Lower framerate
+            "cam_names": "[zed1,zed2]",
+            "cam_models": "[zedx, zedx]",  # Adjust if different
+            "cam_serials": "[44659546,42203370]",
+            "cam_resolutions": "[HD720,HD720]",  # Lower res
+            "cam_framerates": "[15,15]",  # Lower framerate
         }.items(),
     )
 
