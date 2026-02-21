@@ -1,18 +1,19 @@
 #!/usr/bin/env python3
 """
-Point Cloud — subscribes to the registered point cloud topics published by
-two ZED X cameras (zed1, zed2) via the ZED ROS 2 wrapper, converts each
-incoming PointCloud2 message into a NumPy array of (x, y, z) points, and
-maintains a single merged cloud from both cameras.
+Point Cloud — subscribes to the registered point cloud topics
+published by two ZED X cameras (zed1, zed2) via the ZED ROS 2
+wrapper, converts each incoming PointCloud2 message into a NumPy
+array of (x, y, z) points, and maintains a single merged cloud
+from both cameras.
 
-Run:  python3 point_cloud.py   (with cameras already launched)
+Run:  python3 point_cloud.py  (with cameras already launched)
 """
 
+import numpy as np
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import PointCloud2
-import numpy as np
-from sensor_msgs_py import point_cloud2  # ROS 2 helper to iterate PointCloud2 fields
+from sensor_msgs_py import point_cloud2
 
 
 class PointCloud(Node):
@@ -28,13 +29,13 @@ class PointCloud(Node):
         self.cloud = np.empty((0, 3), dtype=np.float32)
 
         # Explicit subscriptions — no loop, no dictionary.
-        self.create_subscription(
+        self._sub_zed1 = self.create_subscription(
             PointCloud2,
             "/zed1/zed_node/point_cloud/cloud_registered",
             self._cb_zed1,
             10,
         )
-        self.create_subscription(
+        self._sub_zed2 = self.create_subscription(
             PointCloud2,
             "/zed2/zed_node/point_cloud/cloud_registered",
             self._cb_zed2,
@@ -42,11 +43,15 @@ class PointCloud(Node):
         )
 
     def _parse(self, msg):
-        """Extract (x, y, z) points from a PointCloud2 message, dropping NaNs."""
+        """Extract (x, y, z) points from a PointCloud2, dropping NaNs."""
         return np.array(
-            list(point_cloud2.read_points(msg, field_names=("x", "y", "z"), skip_nans=True)),
+            list(point_cloud2.read_points(
+                msg,
+                field_names=("x", "y", "z"),
+                skip_nans=True,
+            )),
             dtype=np.float32,
-        )
+        ).reshape(-1, 3)
 
     def _merge(self):
         """Concatenate the two camera clouds into self.cloud."""
@@ -63,8 +68,9 @@ class PointCloud(Node):
 
 
 def main():
+    """Spin the PointCloud node until shutdown."""
     rclpy.init()
-    rclpy.spin(PointCloud())  # Block and process callbacks until Ctrl-C
+    rclpy.spin(PointCloud())
     rclpy.shutdown()
 
 
