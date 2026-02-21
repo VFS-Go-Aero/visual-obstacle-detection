@@ -29,13 +29,13 @@ class PointCloud(Node):
         self.cloud = np.empty((0, 3), dtype=np.float32)
 
         # Explicit subscriptions — no loop, no dictionary.
-        self.create_subscription(
+        self._sub_zed1 = self.create_subscription(
             PointCloud2,
             "/zed1/zed_node/point_cloud/cloud_registered",
             self._cb_zed1,
             10,
         )
-        self.create_subscription(
+        self._sub_zed2 = self.create_subscription(
             PointCloud2,
             "/zed2/zed_node/point_cloud/cloud_registered",
             self._cb_zed2,
@@ -51,7 +51,7 @@ class PointCloud(Node):
                 skip_nans=True,
             )),
             dtype=np.float32,
-        )
+        ).reshape(-1, 3)
 
     def _merge(self):
         """Concatenate the two camera clouds into self.cloud."""
