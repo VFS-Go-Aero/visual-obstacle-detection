@@ -4,23 +4,23 @@ package_name = "visual_obstacle_detection"
 
 setup(
     name=package_name,
-    version='0.0.0',
+    version="0.0.0",
     packages=[package_name],
     data_files=[
-        ('share/ament_index/resource_index/packages',
-            ['resource/' + package_name]),
-        ('share/' + package_name, ['package.xml']),
+        ("share/ament_index/resource_index/packages",
+            ["resource/" + package_name]),
+        ("share/" + package_name, ["package.xml"]),
     ],
-    install_requires=['setuptools'],
+    install_requires=["setuptools"],
     zip_safe=True,
-    maintainer='root',
-    maintainer_email='root@todo.todo',
+    maintainer="root",
+    maintainer_email="root@todo.todo",
     description="Visual Obstacle Detection package",
-    license='MIT',
-    tests_require=['pytest'],
+    license="MIT",
+    tests_require=["pytest"],
     entry_points={
-        'console_scripts': [
-            'publisher = visual_obstacle_detection.publisher:main',
+        "console_scripts": [
+            "publisher = visual_obstacle_detection.publisher:main",
         ],
     },
 )
