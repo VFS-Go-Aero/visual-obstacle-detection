@@ -17,8 +17,14 @@ from sensor_msgs_py import point_cloud2
 
 
 class PointCloud(Node):
+    """Subscribe to two ZED X point clouds and maintain a merged cloud.
 
-    def __init__(self):
+    Converts each incoming PointCloud2 message into a NumPy array of
+    (x, y, z) points and concatenates the two camera clouds into a
+    single array available as ``self.cloud``.
+    """
+
+    def __init__(self) -> None:
         super().__init__("point_cloud")
 
         # Latest (N, 3) float32 array from each camera, starts empty.
@@ -42,8 +48,19 @@ class PointCloud(Node):
             10,
         )
 
-    def _parse(self, msg):
-        """Extract (x, y, z) points from a PointCloud2, dropping NaNs."""
+    def _parse(self, msg: PointCloud2) -> np.ndarray:
+        """Extract (x, y, z) points from a PointCloud2, dropping NaNs.
+
+        Parameters
+        ----------
+        msg : PointCloud2
+            Incoming point cloud message.
+
+        Returns
+        -------
+        np.ndarray
+            Float32 array of shape (N, 3).
+        """
         return np.array(
             list(point_cloud2.read_points(
                 msg,
@@ -53,21 +70,21 @@ class PointCloud(Node):
             dtype=np.float32,
         ).reshape(-1, 3)
 
-    def _merge(self):
+    def _merge(self) -> None:
         """Concatenate the two camera clouds into self.cloud."""
         self.cloud = np.concatenate((self._cloud1, self._cloud2), axis=0)
         self.get_logger().info(f"merged cloud: {self.cloud.shape[0]} pts")
 
-    def _cb_zed1(self, msg):
+    def _cb_zed1(self, msg: PointCloud2) -> None:
         self._cloud1 = self._parse(msg)
         self._merge()
 
-    def _cb_zed2(self, msg):
+    def _cb_zed2(self, msg: PointCloud2) -> None:
         self._cloud2 = self._parse(msg)
         self._merge()
 
 
-def main():
+def main() -> None:
     """Spin the PointCloud node until shutdown."""
     rclpy.init()
     rclpy.spin(PointCloud())
