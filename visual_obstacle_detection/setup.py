@@ -4,7 +4,7 @@ package_name = "visual_obstacle_detection"
 
 setup(
     name=package_name,
-    version="0.0.0",
+    version="0.2.0",
     packages=[package_name],
     data_files=[
         ("share/ament_index/resource_index/packages",
@@ -13,13 +13,14 @@ setup(
     ],
     install_requires=["setuptools"],
     zip_safe=True,
-    maintainer="root",
-    maintainer_email="root@todo.todo",
+    maintainer="Vertical Flight Systems Purdue",
+    maintainer_email="vfspurdue@gmail.com",
     description="Visual Obstacle Detection package",
     license="MIT",
     tests_require=["pytest"],
     entry_points={
         "console_scripts": [
+            "point_cloud = visual_obstacle_detection.point_cloud:main",
             "publisher = visual_obstacle_detection.publisher:main",
         ],
     },

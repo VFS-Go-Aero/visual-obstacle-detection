@@ -16,9 +16,7 @@ class MyPublisher(Node):
 
 def main():
     rclpy.init()
-    node = MyPublisher()
-    rclpy.spin(node)
-    node.destroy_node()
+    rclpy.spin(MyPublisher())
     rclpy.shutdown()
 
 if __name__ == "__main__":
