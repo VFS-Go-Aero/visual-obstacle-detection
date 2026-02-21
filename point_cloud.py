@@ -52,7 +52,7 @@ class PointCloud(Node):
 
 def main():
     rclpy.init()
-    rclpy.spin(PointCloudStore())  # Block and process callbacks until Ctrl-C
+    rclpy.spin(PointCloud())  # Block and process callbacks until Ctrl-C
     rclpy.shutdown()
 
 
