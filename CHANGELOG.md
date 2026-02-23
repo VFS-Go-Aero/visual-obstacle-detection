@@ -7,28 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Initial `visual_obstacle_detection` ROS 2 Python package with a `MyPublisher` node, `package.xml`, `setup.py`, `setup.cfg`, and test scaffolding.
+- `CHANGELOG.md` to document project updates and versioning.
+- `CONTRIBUTING.md` outlining contribution guidelines and code standards.
+
+### Changed
+
+- Replaced all single-quote strings with double-quote strings across the codebase for consistency.
+- Updated `LICENSE` to reflect correct copyright holder (Vertical Flight Systems Purdue) and contributors.
+- Refactored launch files and `point_cloud.py` for improved readability and PEP 8 compliance.
+- Moved `point_cloud.py` from repository root into the `visual_obstacle_detection` package module and registered it as a `point_cloud` console script entry point.
+- Updated `package.xml` with correct version (`0.2.0`), description, maintainer, and license fields.
+- Updated `setup.cfg` and `setup.py` with version `0.2.0`, correct maintainer information, and `point_cloud` entry point.
+- Simplified `publisher.py` `main()` by inlining node creation into `rclpy.spin()`.
+
+### Fixed
+
+- Fixed subscription assignments to store references (`self._sub_zed1`, `self._sub_zed2`) preventing garbage collection.
+- Fixed `_parse` return shape with `.reshape(-1, 3)` to ensure a correct `(N, 3)` array even when `read_points` returns a flat list.
+
 ## [0.2.0] - 2026-02-21
 
 ### Added
 
 - `PointCloud` ROS 2 node that subscribes to registered point cloud topics from two ZED X cameras, converts `PointCloud2` messages to NumPy arrays, and maintains a merged cloud from both cameras.
 - Point cloud merging from dual ZED X camera subscriptions (`zed1`, `zed2`).
-- Initial `visual_obstacle_detection` ROS 2 package with `my_first_pkg` publisher node, `setup.py`, `package.xml`, and test scaffolding.
-- `CONTRIBUTING.md` outlining contribution guidelines and code standards.
 
 ### Changed
 
 - Renamed `PointCloudStore` class to `PointCloud` and updated initialization parameters.
 - Refactored `PointCloud` class to maintain a single merged cloud from two ZED X cameras.
-- Refactored launch files and point cloud script for improved readability and PEP 8 compliance.
-- Replaced all single-quote strings with double-quote strings for consistency.
-- Updated `LICENSE` to reflect correct copyright holder and contributors.
 
 ### Fixed
 
 - Fixed `main` function to spin the `PointCloud` class instead of the old `PointCloudStore`.
-- Fixed subscription assignments to store references (`_sub_zed1`, `_sub_zed2`) preventing garbage collection.
-- Fixed point cloud data reshape to ensure correct `(N, 3)` array shape from `_parse`.
 
 ## [0.1.0] - 2026-02-18
 
