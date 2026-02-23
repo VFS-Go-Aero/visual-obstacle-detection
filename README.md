@@ -44,7 +44,7 @@ ros2 launch zed_wrapper zed_camera.launch.py camera_model:=zedx
 
 **Launch Dual Cameras**
 ```bash
-ros2 launch launch_files multi_zed.launch.py
+ros2 launch launch_files multi_zed_tf.launch.py
 ```
 
 **Run Pointcloud Viz**
