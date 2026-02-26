@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1] - 2026-02-26
+
+### Added
+
+- Absorbed `bash-commands` repository, adding a reference README with common ROS 2 CLI commands (rangefinder, LaserScan, etc.).
+
+## [0.4.0] - 2026-02-25
+
+### Added
+
+- Absorbed `scan_to_mavlink` ROS 2 package from the external `ros2-pkgs` repository, adding MAVLink obstacle-distance message support via `scan_to_mavlink_node`.
+- Launch files, test scaffolding, and helper scripts (`fakedata.py`, `testmav.py`) for the `scan_to_mavlink` package.
+
 ## [0.3.1] - 2026-02-25
 
 ### Fixed
@@ -65,6 +78,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated ZED2 transform parameters to zero.
 - Updated static transform publisher arguments for clarity.
 
-[Unreleased]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.4.0...v0.4.1
+[0.4.0]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.3.1...v0.4.0
+[0.3.1]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.3.0...v0.3.1
+[0.3.0]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/releases/tag/v0.1.0

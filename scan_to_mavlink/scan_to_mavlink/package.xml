@@ -1,17 +1,16 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>visual_obstacle_detection</name>
+  <name>scan_to_mavlink</name>
   <version>0.4.1</version>
-  <description>Visual Obstacle Detection package</description>
+  <description>Converts LaserScan data to MAVLink obstacle distance messages</description>
   <maintainer email="vfspurdue@gmail.com">Vertical Flight Systems Purdue</maintainer>
   <license>MIT</license>
 
   <depend>rclpy</depend>
-  <depend>std_msgs</depend>
   <depend>sensor_msgs</depend>
-  <depend>sensor_msgs_py</depend>
-  <exec_depend>python3-numpy</exec_depend>
+  <depend>mavros_msgs</depend>
+  <depend>std_msgs</depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
