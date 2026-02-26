@@ -38,6 +38,9 @@ srv/_*.py
 *.dox
 *.wikidoc
 
+# Temporary files
+/tmp/
+
 # Eclipse
 .project
 .cproject
