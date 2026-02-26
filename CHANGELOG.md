@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- ROS 2 CI workflow (`.github/workflows/ros2_ci.yml`) using `ros-industrial/industrial_ci` to build and test the package on every push/PR to `main` and `dev`.
+- CI step to place a `COLCON_IGNORE` marker in `scan_to_mavlink/` so colcon skips that package during CI builds.
+
+### Fixed
+
+- Removed trailing blank line in `setup.py` (flake8 W391).
+- Reformatted multi-line docstrings in `point_cloud.py` and `publisher.py` to comply with `ament_pep257` conventions (D205, D213, D400, D413).
+
+### Changed
+
+- Updated `CONTRIBUTING.md` with full repository layout, ROS 2 package guidelines, CI documentation, and corrected docstring formatting rules.
+
 ## [0.4.1] - 2026-02-26
 
 ### Added
