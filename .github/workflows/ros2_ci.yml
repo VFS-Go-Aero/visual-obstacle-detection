@@ -1,0 +1,19 @@
+name: ROS2 CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+jobs:
+  industrial_ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run industrial_ci
+        uses: "ros-industrial/industrial_ci@master"
+        env:
+          ROS_DISTRO: humble
+          PROJECT_REL_PATH: visual_obstacle_detection
