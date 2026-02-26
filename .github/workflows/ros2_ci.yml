@@ -12,6 +12,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Ignore scan_to_mavlink in colcon
+        run: touch scan_to_mavlink/COLCON_IGNORE
+
       - name: Run industrial_ci
         uses: "ros-industrial/industrial_ci@master"
         env:
