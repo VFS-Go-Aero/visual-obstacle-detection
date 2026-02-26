@@ -1,4 +1,5 @@
-"""Publisher — simple ROS 2 node that publishes a greeting.
+"""
+Publisher — simple ROS 2 node that publishes a greeting.
 
 Publishes on the ``chatter`` topic once per second.
 """
