@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""
-Point Cloud — subscribes to the registered point cloud topics
-published by two ZED X cameras (zed1, zed2) via the ZED ROS 2
-wrapper, converts each incoming PointCloud2 message into a NumPy
-array of (x, y, z) points, and maintains a single merged cloud
-from both cameras.
+"""Point Cloud — merged point cloud from two ZED X cameras.
+
+Subscribes to the registered point cloud topics published by two
+ZED X cameras (zed1, zed2) via the ZED ROS 2 wrapper, converts each
+incoming PointCloud2 message into a NumPy array of (x, y, z) points,
+and maintains a single merged cloud from both cameras.
 
 Run:  python3 point_cloud.py  (with cameras already launched)
 """
