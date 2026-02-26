@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - ROS 2 CI workflow (`.github/workflows/ros2_ci.yml`) using `ros-industrial/industrial_ci` to build and test the package on every push/PR to `main` and `dev`.
+- CI step to place a `COLCON_IGNORE` marker in `scan_to_mavlink/` so colcon skips that package during CI builds.
 
 ### Fixed
 
