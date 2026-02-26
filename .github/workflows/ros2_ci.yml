@@ -6,11 +6,30 @@ on:
   pull_request:
     branches: [main, dev]
 
+
 jobs:
   industrial_ci:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Cache Docker image
+        id: docker-cache
+        uses: actions/cache@v4
+        with:
+          path: /tmp/docker-cache
+          key: docker-ros-humble
+
+      - name: Load cached Docker image
+        if: steps.docker-cache.outputs.cache-hit == 'true'
+        run: docker load -i /tmp/docker-cache/image.tar
+
+      - name: Pull and save Docker image
+        if: steps.docker-cache.outputs.cache-hit != 'true'
+        run: |
+          docker pull ros:humble-ros-base-jammy
+          mkdir -p /tmp/docker-cache
+          docker save ros:humble-ros-base-jammy -o /tmp/docker-cache/image.tar
 
       - name: Ignore scan_to_mavlink in colcon
         run: touch scan_to_mavlink/COLCON_IGNORE
@@ -19,4 +38,5 @@ jobs:
         uses: "ros-industrial/industrial_ci@master"
         env:
           ROS_DISTRO: humble
+          DOCKER_IMAGE: ros:humble-ros-base-jammy
           PROJECT_REL_PATH: visual_obstacle_detection
