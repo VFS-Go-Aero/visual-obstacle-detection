@@ -22,6 +22,7 @@ setup(
         "console_scripts": [
             "point_cloud = visual_obstacle_detection.point_cloud:main",
             "publisher = visual_obstacle_detection.publisher:main",
+	    "obstacle_detector = visual_obstacle_detection.obstacle_detector:main",
         ],
     },
 )
