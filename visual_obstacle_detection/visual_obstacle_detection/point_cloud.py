@@ -64,14 +64,18 @@ class PointCloud(Node):
         np.ndarray
             Float32 array of shape (N, 3).
         """
-        return np.array(
+        structured = np.array(
             list(point_cloud2.read_points(
                 msg,
                 field_names=("x", "y", "z"),
                 skip_nans=True,
             )),
-            dtype=np.float32,
-        ).reshape(-1, 3)
+        )
+        if structured.size == 0:
+            return np.empty((0, 3), dtype=np.float32)
+        return np.column_stack(
+            [structured["x"], structured["y"], structured["z"]]
+        ).astype(np.float32)
 
     def _merge(self) -> None:
         """Concatenate the two camera clouds into self.cloud."""def _merge(self) -> None:
