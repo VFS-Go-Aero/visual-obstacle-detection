@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>scan_to_mavlink</name>
-  <version>0.4.0</version>
+  <version>0.4.1</version>
   <description>Converts LaserScan data to MAVLink obstacle distance messages</description>
   <maintainer email="vfspurdue@gmail.com">Vertical Flight Systems Purdue</maintainer>
   <license>MIT</license>
