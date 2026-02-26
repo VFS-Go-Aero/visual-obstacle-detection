@@ -1,0 +1,42 @@
+**/.cmake/api/
+build/
+install/
+log/
+*.so
+build/
+install/
+log/
+*.so
+build/
+install/
+log/
+*.so
+build/
+install/
+log/
+*.so
+build/
+install/
+log/
+*.so
+build/
+install/
+log/
+src/lightwarelidar2/
+# Ignore build/install/log
+build/
+install/
+log/
+
+# Ignore compiled libraries
+*.so
+*.pyc
+*.pyo
+__pycache__/
+
+# Ignore editor/IDE files
+*.swp
+*.idea/
+.vscode/
+
+# Ignore everything else outside source
