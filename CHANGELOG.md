@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated `CONTRIBUTING.md` with full repository layout, ROS 2 package guidelines, CI documentation, and corrected docstring formatting rules.
 - Added Docker layer caching to the ROS 2 CI workflow to speed up builds by caching the base image (`ros:humble-ros-base-jammy`).
 - Updated `.gitignore` to exclude `/tmp/` to prevent Docker cache files from being tracked.
+- Updated `.github/workflows/ros2_ci.yml` to prevent redundant CI runs after pull request merges. The workflow now runs for direct pushes and non-pull-request merges, but skips redundant runs if already executed during a pull request.
 
 ## [0.4.1] - 2026-02-26
 
