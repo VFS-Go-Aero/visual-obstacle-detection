@@ -5,13 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## Unreleased
+
+## [0.4.3] - 2026-02-27
 
 ### Changed
 
 - Moved `fakedata.py` and `testmav.py` to a new `scripts/` folder for better organization.
 - Flattened the `scan_to_mavlink` package structure by removing the redundant nested folder.
 - Updated ROS2 CI workflow to test both `visual_obstacle_detection` and `scan_to_mavlink` packages.
+- Refactored and reformatted `scan_to_mavlink` to adhere to the repository's contributing guidelines and pass all test standards.
 
 ## [0.4.2] - 2026-02-26
 
@@ -105,7 +108,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated ZED2 transform parameters to zero.
 - Updated static transform publisher arguments for clarity.
 
-[Unreleased]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.4.2...HEAD
+[Unreleased]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.4.3...HEAD
+[0.4.3]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.4.2...v0.4.3
 [0.4.2]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.3.1...v0.4.0
