@@ -1,6 +1,6 @@
 from setuptools import setup
 
-package_name = "visual_obstacle_detection"
+package_name = "scan_to_mavlink"
 
 setup(
     name=package_name,
@@ -15,14 +15,12 @@ setup(
     zip_safe=True,
     maintainer="Vertical Flight Systems Purdue",
     maintainer_email="vfspurdue@gmail.com",
-    description="Visual Obstacle Detection package",
+    description="Converts LaserScan data to MAVLink obstacle distance messages",
     license="MIT",
     tests_require=["pytest"],
     entry_points={
         "console_scripts": [
-            "point_cloud = visual_obstacle_detection.point_cloud:main",
-            "publisher = visual_obstacle_detection.publisher:main",
-	    "obstacle_detector = visual_obstacle_detection.obstacle_detector:main",
+            "scan_to_mavlink_node = scan_to_mavlink.scan_to_mavlink_node:main",
         ],
     },
 )
