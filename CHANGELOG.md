@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Moved `fakedata.py` and `testmav.py` to a new `scripts/` folder for better organization.
 - Flattened the `scan_to_mavlink` package structure by removing the redundant nested folder.
+- Updated ROS2 CI workflow to test both `visual_obstacle_detection` and `scan_to_mavlink` packages.
 
 ## [0.4.2] - 2026-02-26
 
