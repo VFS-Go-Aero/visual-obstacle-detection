@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reorganized `package.xml` by separating repository and website URLs from maintainer information.
 - Removed `COLCON_IGNORE` step for `scan_to_mavlink` in CI workflow.
 - Added README and updated package metadata with maintainer URLs and authors.
+- Updated `README.md` with detailed project overview, organization information, contact details, and social media links.
 
 ## [0.4.3] - 2026-02-27
 
