@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """
-Point Cloud — subscribes to the registered point cloud topics
-published by two ZED X cameras (zed1, zed2) via the ZED ROS 2
-wrapper, converts each incoming PointCloud2 message into a NumPy
-array of (x, y, z) points, and maintains a single merged cloud
-from both cameras.
+Point Cloud — merged point cloud from two ZED X cameras.
+
+Subscribes to the registered point cloud topics published by two
+ZED X cameras (zed1, zed2) via the ZED ROS 2 wrapper, converts each
+incoming PointCloud2 message into a NumPy array of (x, y, z) points,
+and maintains a single merged cloud from both cameras.
 
 Run:  python3 point_cloud.py  (with cameras already launched)
 """
@@ -18,7 +19,8 @@ import std_msgs.msg as std_msg
 
 
 class PointCloud(Node):
-    """Subscribe to two ZED X point clouds and maintain a merged cloud.
+    """
+    Subscribe to two ZED X point clouds and maintain a merged cloud.
 
     Converts each incoming PointCloud2 message into a NumPy array of
     (x, y, z) points and concatenates the two camera clouds into a
@@ -52,7 +54,8 @@ class PointCloud(Node):
 	self._merged_pub = self.create_publisher(PointCloud2, "/merged_cloud", 10)
 
     def _parse(self, msg: PointCloud2) -> np.ndarray:
-        """Extract (x, y, z) points from a PointCloud2, dropping NaNs.
+        """
+        Extract (x, y, z) points from a PointCloud2, dropping NaNs.
 
         Parameters
         ----------
@@ -63,6 +66,7 @@ class PointCloud(Node):
         -------
         np.ndarray
             Float32 array of shape (N, 3).
+
         """
         structured = np.array(
             list(point_cloud2.read_points(
@@ -78,7 +82,6 @@ class PointCloud(Node):
         ).astype(np.float32)
 
     def _merge(self) -> None:
-        """Concatenate the two camera clouds into self.cloud."""def _merge(self) -> None:
       	"""Concatenate the two camera clouds and publish on /merged_cloud."""
       	self.cloud = np.concatenate((self._cloud1, self._cloud2), axis=0)
       	self.get_logger().info(f"merged cloud: {self.cloud.shape[0]} pts")
