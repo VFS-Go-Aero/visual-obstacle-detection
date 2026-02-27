@@ -12,6 +12,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `obstacle_detector` console script entry point for the new obstacle detector node.
 - Merged point cloud publisher on `/merged_cloud` topic in the `PointCloud` node using `create_cloud_xyz32`.
 
+## [0.4.2] - 2026-02-26
+
+### Added
+
+- ROS 2 CI workflow (`.github/workflows/ros2_ci.yml`) using `ros-industrial/industrial_ci` to build and test the package on every push/PR to `main` and `dev`.
+- CI step to place a `COLCON_IGNORE` marker in `scan_to_mavlink/` so colcon skips that package during CI builds.
+
+### Fixed
+
+- Removed trailing blank line in `setup.py` (flake8 W391).
+- Reformatted multi-line docstrings in `point_cloud.py` and `publisher.py` to comply with `ament_pep257` conventions (D205, D213, D400, D413).
+
+### Changed
+
+- Updated `CONTRIBUTING.md` with full repository layout, ROS 2 package guidelines, CI documentation, and corrected docstring formatting rules.
+- Added Docker layer caching to the ROS 2 CI workflow to speed up builds by caching the base image (`ros:humble-ros-base-jammy`).
+- Updated `.gitignore` to exclude `/tmp/` to prevent Docker cache files from being tracked.
+- Updated `.github/workflows/ros2_ci.yml` to prevent redundant CI runs after pull request merges. The workflow now runs for direct pushes and non-pull-request merges, but skips redundant runs if already executed during a pull request.
+
 ## [0.4.1] - 2026-02-26
 
 ### Added
@@ -85,7 +104,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated ZED2 transform parameters to zero.
 - Updated static transform publisher arguments for clarity.
 
-[Unreleased]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.4.2...HEAD
+[0.4.2]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.3.0...v0.3.1
