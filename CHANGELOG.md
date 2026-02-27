@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.4.4] - 2026-02-27
+
 ### Changed
 
 - Enhanced `CONTRIBUTING.md` with additional PR standards, development workflow, and prohibited actions to improve collaboration and maintain code quality.
