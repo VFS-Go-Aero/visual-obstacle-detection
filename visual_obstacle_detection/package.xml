@@ -4,7 +4,9 @@
   <name>visual_obstacle_detection</name>
   <version>0.4.3</version>
   <description>Visual Obstacle Detection package</description>
-  <maintainer email="vfspurd@purdue.edu" url="https://vfspurdue.com">Vertical Flight Systems Purdue</maintainer>
+  <url type="repository">https://github.com/VFS-Go-Aero/visual-obstacle-detection</url>
+  <maintainer email="vfspurd@purdue.edu">Vertical Flight Systems Purdue</maintainer>
+  <url type="website">https://vfspurdue.com</url>
   <license>MIT</license>
 
   <depend>rclpy</depend>
@@ -22,8 +24,6 @@
   <author email="gfellows@purdue.edu">Grant Fellows</author>
   <author email="swadi@purdue.edu">Arin Swadi</author>
   <author email="standale@purdue.edu">Siddhant Tandale</author>
-
-  <url type="repository">https://github.com/VFS-Go-Aero/visual-obstacle-detection</url>
 
   <export>
     <build_type>ament_python</build_type>
