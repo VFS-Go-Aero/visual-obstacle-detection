@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+
+- Enhanced `CONTRIBUTING.md` with additional PR standards, development workflow, and prohibited actions to improve collaboration and maintain code quality.
+- Reorganized `package.xml` by separating repository and website URLs from maintainer information.
+- Removed `COLCON_IGNORE` step for `scan_to_mavlink` in CI workflow.
+- Added README and updated package metadata with maintainer URLs and authors.
+
 ## [0.4.3] - 2026-02-27
 
 ### Changed
