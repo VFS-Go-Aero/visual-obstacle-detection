@@ -1,5 +1,5 @@
 """
-MovingFakeObstacle1D 
+MovingFakeObstacle1D.
 
 Publishes fake obstacle data to the ``/mavros/obstacle_distance_3d/send`` topic.
 """
