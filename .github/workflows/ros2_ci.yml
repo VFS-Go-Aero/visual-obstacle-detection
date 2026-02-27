@@ -34,9 +34,6 @@ jobs:
           mkdir -p /tmp/docker-cache
           docker save ros:humble-ros-base-jammy -o /tmp/docker-cache/image.tar
 
-      - name: Remove COLCON_IGNORE for scan_to_mavlink
-        run: rm -f scan_to_mavlink/COLCON_IGNORE
-
       - name: Test visual_obstacle_detection package
         uses: "ros-industrial/industrial_ci@master"
         env:
