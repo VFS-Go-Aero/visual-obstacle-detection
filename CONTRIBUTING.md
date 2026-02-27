@@ -11,6 +11,71 @@ Thank you for contributing to **visual-obstacle-detection**. Follow the guidelin
    ```
 3. Make your changes, commit, and open a pull request.
 
+## Repository Layout
+
+```
+visual-obstacle-detection/
+├── .github/
+│   └── workflows/
+│       └── ros2_ci.yml          # ROS 2 CI workflow (industrial_ci)
+├── CHANGELOG.md
+├── CONTRIBUTING.md
+├── LICENSE
+├── launch_files/                # ROS 2 launch files
+│   ├── multi_zed.launch.py
+│   └── multi_zed_tf.launch.py
+└── visual_obstacle_detection/   # ROS 2 ament_python package
+    ├── package.xml              # Package manifest (dependencies, metadata)
+    ├── setup.py                 # Python package setup
+    ├── setup.cfg                # Entry-point script directories
+    ├── resource/                # ament index marker
+    │   └── visual_obstacle_detection
+    ├── visual_obstacle_detection/
+    │   ├── __init__.py
+    │   ├── point_cloud.py       # Point cloud subscriber node
+    │   └── publisher.py         # Example publisher node
+    └── test/                    # ament lint + pytest tests
+        ├── test_copyright.py
+        ├── test_flake8.py
+        └── test_pep257.py
+```
+
+## ROS 2 Package Guidelines
+
+This project is built as a **ROS 2 Humble** `ament_python` package.
+
+### Building
+
+```bash
+# From your colcon workspace src/ directory:
+cd ~/colcon_ws/src
+ln -s /path/to/visual-obstacle-detection/visual_obstacle_detection .
+
+# Build
+cd ~/colcon_ws
+colcon build --packages-select visual_obstacle_detection
+source install/setup.bash
+```
+
+### Adding Dependencies
+
+- **Python runtime dependencies** — Add `<depend>` or `<exec_depend>` entries in `package.xml`.
+- **Test dependencies** — Add `<test_depend>` entries in `package.xml`.
+- **pip-only packages** — Add them to `install_requires` in `setup.py` as well.
+
+### Adding Nodes
+
+1. Create a new module under `visual_obstacle_detection/visual_obstacle_detection/`.
+2. Implement a `main()` entry point.
+3. Register the entry point in `setup.py` under `console_scripts`:
+   ```python
+   "my_node = visual_obstacle_detection.my_module:main",
+   ```
+
+### Launch Files
+
+Launch files live in the top-level `launch_files/` directory and use the ROS 2 Python launch format (`.launch.py`).
+
 ## Code Style
 
 This project follows [PEP 8](https://peps.python.org/pep-0008/). All Python code must conform to the standards below.
@@ -21,6 +86,7 @@ This project follows [PEP 8](https://peps.python.org/pep-0008/). All Python code
 - **Maximum line length** — 79 characters for code, 72 for docstrings and comments.
 - **Blank lines** — Two blank lines before and after top-level definitions (classes, functions). One blank line between methods inside a class.
 - **Encoding** — Use UTF-8. Omit the encoding declaration (Python 3 default).
+- **No trailing blank lines** — Files must not end with extra blank lines (flake8 W391).
 
 ### Imports
 
@@ -56,23 +122,35 @@ This project follows [PEP 8](https://peps.python.org/pep-0008/). All Python code
 ### Docstrings
 
 - Every public module, class, and function must have a docstring ([PEP 257](https://peps.python.org/pep-0257/)).
+- The summary line must end with a period.
+- For multi-line docstrings, the summary must start on the **second line** (the line after `"""`), not on the same line as the opening quotes (D213).
+- Leave a **blank line** between the summary and the description (D205).
+- Leave a **blank line after the last section** before the closing `"""` (D413).
 - Use the following format:
   ```python
-  def merge_clouds(cloud_a, cloud_b):
-      """Merge two point clouds into a single (N, 3) array.
+  """
+  Merge two point clouds into a single array.
 
-      Parameters
-      ----------
-      cloud_a : np.ndarray
-          First cloud, shape (M, 3).
-      cloud_b : np.ndarray
-          Second cloud, shape (K, 3).
+  Concatenates cloud_a and cloud_b along axis 0 and returns
+  the result as a contiguous float32 array.
 
-      Returns
-      -------
-      np.ndarray
-          Merged cloud, shape (M + K, 3).
-      """
+  Parameters
+  ----------
+  cloud_a : np.ndarray
+      First cloud, shape (M, 3).
+  cloud_b : np.ndarray
+      Second cloud, shape (K, 3).
+
+  Returns
+  -------
+  np.ndarray
+      Merged cloud, shape (M + K, 3).
+
+  """
+  ```
+- Single-line docstrings keep everything on one line:
+  ```python
+  """Spin the PointCloud node until shutdown."""
   ```
 
 ### Type Hints
@@ -89,16 +167,38 @@ This project follows [PEP 8](https://peps.python.org/pep-0008/). All Python code
 - Write comments as complete sentences, starting with a capital letter.
 - Use inline comments only when the intent is not obvious from the code itself.
 
-## Linting
+## Linting & CI
 
-Run the following before opening a pull request:
+### Automated CI
+
+Every push and pull request to `main` or `dev` triggers the **ROS2 CI** workflow (`.github/workflows/ros2_ci.yml`). It uses [`ros-industrial/industrial_ci`](https://github.com/ros-industrial/industrial_ci) to build and test the package inside a ROS 2 Humble Docker container.
+
+The CI runs three ament lint tests automatically:
+
+| Test | What it checks |
+|------|----------------|
+| `ament_copyright` | Copyright header present in source files |
+| `ament_flake8` | PEP 8 compliance (via flake8) |
+| `ament_pep257` | Docstring conventions (via pydocstyle) |
+
+**Your PR will not pass CI unless all three linters report zero errors.**
+
+### Running Linters Locally
 
 ```bash
-# Check style compliance
+cd visual_obstacle_detection
+
+# flake8 (PEP 8)
 flake8 --max-line-length 79 .
 
-# Auto-format (optional but recommended)
-black --line-length 79 .
+# pydocstyle (PEP 257)
+pydocstyle .
+
+# Or run the full colcon test suite (requires a colcon workspace):
+cd ~/colcon_ws
+colcon build --packages-select visual_obstacle_detection
+colcon test --packages-select visual_obstacle_detection
+colcon test-result --verbose
 ```
 
 Fix all warnings and errors before submitting.
@@ -111,7 +211,7 @@ Fix all warnings and errors before submitting.
 ## Pull Requests
 
 - Reference any related issues in the PR description.
-- Ensure all linting checks pass.
+- Ensure the ROS2 CI workflow passes (all ament lint tests green).
 - Request a review from at least one maintainer.
 - Update [CHANGELOG.md](CHANGELOG.md) under the `[Unreleased]` section with a summary of your changes.
 
