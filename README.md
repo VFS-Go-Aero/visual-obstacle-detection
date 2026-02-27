@@ -28,7 +28,7 @@ For inquiries, please reach out to us at:
 
 ### Social Media
 Stay connected with us on social media:
-- [LinkedIn](https://www.linkedin.com/company/purdue-vtol/)
+- [LinkedIn](https://www.linkedin.com/company/vfspurdue)
 - [Instagram](https://www.instagram.com/vfspurdue/)
 
 ## Getting Started
