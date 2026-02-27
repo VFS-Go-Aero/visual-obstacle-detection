@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Moved `fakedata.py` and `testmav.py` to a new `scripts/` folder for better organization.
+- Flattened the `scan_to_mavlink` package structure by removing the redundant nested folder.
+
 ## [0.4.2] - 2026-02-26
 
 ### Added

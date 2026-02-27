@@ -24,20 +24,36 @@ visual-obstacle-detection/
 ├── launch_files/                # ROS 2 launch files
 │   ├── multi_zed.launch.py
 │   └── multi_zed_tf.launch.py
-└── visual_obstacle_detection/   # ROS 2 ament_python package
-    ├── package.xml              # Package manifest (dependencies, metadata)
-    ├── setup.py                 # Python package setup
-    ├── setup.cfg                # Entry-point script directories
-    ├── resource/                # ament index marker
-    │   └── visual_obstacle_detection
-    ├── visual_obstacle_detection/
-    │   ├── __init__.py
-    │   ├── point_cloud.py       # Point cloud subscriber node
-    │   └── publisher.py         # Example publisher node
-    └── test/                    # ament lint + pytest tests
-        ├── test_copyright.py
-        ├── test_flake8.py
-        └── test_pep257.py
+├── scripts/                     # Utility scripts
+│   ├── fakedata.py              # ROS 2 fake obstacle publisher
+│   └── testmav.py               # MAVLink fake obstacle sender
+├── scan_to_mavlink/             # ROS 2 ament_python package
+│   ├── package.xml              # Package manifest (dependencies, metadata)
+│   ├── setup.py                 # Python package setup
+│   ├── setup.cfg                # Entry-point script directories
+│   ├── resource/                # ament index marker
+│   │   └── scan_to_mavlink
+│   ├── scan_to_mavlink/         # Package source code
+│   │   ├── __init__.py
+│   │   └── scan_to_mavlink_node.py
+│   └── test/                    # ament lint + pytest tests
+│       ├── test_copyright.py
+│       ├── test_flake8.py
+│       └── test_pep257.py
+├── visual_obstacle_detection/   # ROS 2 ament_python package
+│   ├── package.xml              # Package manifest (dependencies, metadata)
+│   ├── setup.py                 # Python package setup
+│   ├── setup.cfg                # Entry-point script directories
+│   ├── resource/                # ament index marker
+│   │   └── visual_obstacle_detection
+│   ├── visual_obstacle_detection/
+│   │   ├── __init__.py
+│   │   ├── point_cloud.py       # Point cloud subscriber node
+│   │   └── publisher.py         # Example publisher node
+│   └── test/                    # ament lint + pytest tests
+│       ├── test_copyright.py
+│       ├── test_flake8.py
+│       └── test_pep257.py
 ```
 
 ## ROS 2 Package Guidelines
