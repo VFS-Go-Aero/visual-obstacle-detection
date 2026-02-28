@@ -12,24 +12,24 @@ from std_msgs.msg import Header
 class ObstacleDetection(Node):
 
     def __init__(self):
-        super().__init__('obstacle_detection')
+        super().__init__("obstacle_detection")
 
         self.subscription = self.create_subscription(
             PointCloud2,
-            '/points',
+            "/zed1/zed_node/point_cloud/cloud_registered",
             self._detect_and_publish,
             10
         )
 
         self.obstacle_pub = self.create_publisher(
             PointCloud2,
-            '/obstacle_points',
+            "/obstacle_points",
             10
         )
 
         self.region_pub = self.create_publisher(
             MarkerArray,
-            '/drone_regions',
+            "/drone_regions",
             10
         )
 
