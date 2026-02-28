@@ -9,8 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `obstacle_detector` console script entry point for the new obstacle detector node.
+- Added `obstacle_detection` console script entry point for the new obstacle detection node.
 - Merged point cloud publisher on `/merged_cloud` topic in the `PointCloud` node using `create_cloud_xyz32`.
+
+### Fixed
+
+- Corrected indentation for publisher initialization in `point_cloud.py`.
+- Corrected indentation and minor formatting issues in `point_cloud.py`.
+- Renamed console script from `obstacle_detector` to `obstacle_detection` and updated node name accordingly.
 
 ## [0.5.0] - 2026-02-28
 
