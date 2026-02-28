@@ -51,7 +51,7 @@ class PointCloud(Node):
             10,
         )
 
-    self._merged_pub = self.create_publisher(PointCloud2, "/merged_cloud", 10)
+        self._merged_pub = self.create_publisher(PointCloud2, "/merged_cloud", 10)
 
     def _parse(self, msg: PointCloud2) -> np.ndarray:
         """
