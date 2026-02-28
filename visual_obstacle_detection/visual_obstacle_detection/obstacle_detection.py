@@ -12,9 +12,9 @@ from std_msgs.msg import Header
 class PointCloud(Node):
 
     def __init__(self) -> None:
-        super().__init__("point_cloud")
+        super().__init__("obstacle_detection")
 
-        self._cloud1 = np.empty((0, 3), dtype=np.float32)
+        self._cloud1 = np.empty(    (0, 3), dtype=np.float32)
         self._cloud2 = np.empty((0, 3), dtype=np.float32)
         self.cloud = np.empty((0, 3), dtype=np.float32)
 
