@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- Created new `launch_files` ROS 2 package with `package.xml` and moved launch scripts into `launch_files/launch/`.
+  - Included dual-camera ZED launch files: `multi_zed.launch.py` and `multi_zed_tf.launch.py`.
+
+### Changed
+
+- Relocated existing launch files from the repository root into the new `launch_files/launch` directory for proper packaging.
+- Updated ROS2 CI workflow to run tests for the new `launch_files` package alongside existing packages.
+
 ## [0.4.4] - 2026-02-27
 
 ### Changed
