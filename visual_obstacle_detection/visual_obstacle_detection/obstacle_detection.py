@@ -174,11 +174,9 @@ class ObstacleDetection(Node):
         self.region_pub.publish(marker_array)
 
 
-def main(args=None):
-    rclpy.init(args=args)
-    node = ObstacleDetection()
-    rclpy.spin(node)
-    node.destroy_node()
+def main() -> None:
+    rclpy.init()
+    rclpy.spin(ObstacleDetection())
     rclpy.shutdown()
 
 
