@@ -16,7 +16,7 @@ class PointCloud(Node):
 
         self._cloud1 = np.empty(    (0, 3), dtype=np.float32)
         self._cloud2 = np.empty((0, 3), dtype=np.float32)
-        self.cloud = np.empty((0, 3), dtype=np.float32)
+        self.cloud = np.empty((0, 3), dtype=np.float32) 
 
         self.pub = self.create_publisher(PointCloud2, "/merged_cloud/obstacles", 10)
         self.region_pub = self.create_publisher(MarkerArray, "/merged_cloud/regions", 10)
@@ -59,9 +59,9 @@ class PointCloud(Node):
             return
 
         min_dist, max_dist, min_height = 0.5, 5.0, 0.1
-        x_min, x_max = -2.0, 2.0
-        y_min, y_max = 0.3, 5.0
-        z_min, z_max = -1.5, 1.5
+        x_min, x_max = -5.0, 5.0
+        y_min, y_max = -5.0, 5.0
+        z_min, z_max = -5.0, 5.0
 
         x = self.cloud[:,0]
         y = self.cloud[:,1]
