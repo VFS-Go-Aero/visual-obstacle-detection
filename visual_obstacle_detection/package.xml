@@ -2,9 +2,11 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>visual_obstacle_detection</name>
-  <version>0.4.3</version>
+  <version>0.4.4</version>
   <description>Visual Obstacle Detection package</description>
-  <maintainer email="vfspurdue@gmail.com">Vertical Flight Systems Purdue</maintainer>
+  <url type="repository">https://github.com/VFS-Go-Aero/visual-obstacle-detection</url>
+  <maintainer email="vfspurd@purdue.edu">Vertical Flight Systems Purdue</maintainer>
+  <url type="website">https://vfspurdue.com</url>
   <license>MIT</license>
 
   <depend>rclpy</depend>
@@ -17,6 +19,11 @@
   <test_depend>ament_flake8</test_depend>
   <test_depend>ament_pep257</test_depend>
   <test_depend>python3-pytest</test_depend>
+
+  <author email="chand289@purdue.edu">Advay Chandra</author>
+  <author email="gfellows@purdue.edu">Grant Fellows</author>
+  <author email="swadi@purdue.edu">Arin Swadi</author>
+  <author email="standale@purdue.edu">Siddhant Tandale</author>
 
   <export>
     <build_type>ament_python</build_type>

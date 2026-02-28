@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>launch_files</name>
+  <version>0.0.1</version>
+  <description>Holds relevant launch files for the visual obstacle detection system</description>
+  <maintainer email="vfspurd@purdue.edu">Vertical Flight Systems Purdue</maintainer>
+  <url type="website">https://vfspurdue.com</url>
+  <license>MIT</license>
+
+
+  <author email="chand289@purdue.edu">Advay Chandra</author>
+  <author email="gfellows@purdue.edu">Grant Fellows</author>
+  <author email="swadi@purdue.edu">Arin Swadi</author>
+
+</package>

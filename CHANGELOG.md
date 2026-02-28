@@ -12,6 +12,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `obstacle_detector` console script entry point for the new obstacle detector node.
 - Merged point cloud publisher on `/merged_cloud` topic in the `PointCloud` node using `create_cloud_xyz32`.
 
+### Added
+
+- Created new `launch_files` ROS 2 package with `package.xml` and moved launch scripts into `launch_files/launch/`.
+  - Included dual-camera ZED launch files: `multi_zed.launch.py` and `multi_zed_tf.launch.py`.
+
+### Changed
+
+- Relocated existing launch files from the repository root into the new `launch_files/launch` directory for proper packaging.
+- Updated ROS2 CI workflow to run tests for the new `launch_files` package alongside existing packages.
+
+## [0.4.4] - 2026-02-27
+
+### Changed
+
+- Enhanced `CONTRIBUTING.md` with additional PR standards, development workflow, and prohibited actions to improve collaboration and maintain code quality.
+- Reorganized `package.xml` by separating repository and website URLs from maintainer information.
+- Removed `COLCON_IGNORE` step for `scan_to_mavlink` in CI workflow.
+- Added README and updated package metadata with maintainer URLs and authors.
+- Updated `README.md` with detailed project overview, organization information, contact details, and social media links.
+
 ## [0.4.3] - 2026-02-27
 
 ### Changed

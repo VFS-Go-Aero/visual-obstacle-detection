@@ -4,7 +4,7 @@ package_name = "visual_obstacle_detection"
 
 setup(
     name=package_name,
-    version="0.4.3",
+    version="0.4.4",
     packages=[package_name],
     data_files=[
         ("share/ament_index/resource_index/packages",
@@ -15,6 +15,7 @@ setup(
     zip_safe=True,
     maintainer="Vertical Flight Systems Purdue",
     maintainer_email="vfspurdue@gmail.com",
+    maintainer_url="https://vfspurdue.com",
     description="Visual Obstacle Detection package",
     license="MIT",
     tests_require=["pytest"],
@@ -25,4 +26,5 @@ setup(
 	    "obstacle_detector = visual_obstacle_detection.obstacle_detector:main",
         ],
     },
+    url="https://github.com/VFS-Go-Aero/visual-obstacle-detection",
 )
