@@ -14,12 +14,16 @@ class PointCloud(Node):
     def __init__(self) -> None:
         super().__init__("obstacle_detection")
 
-        self._cloud1 = np.empty(    (0, 3), dtype=np.float32)
+        self._cloud1 = np.empty((0, 3), dtype=np.float32)
         self._cloud2 = np.empty((0, 3), dtype=np.float32)
-        self.cloud = np.empty((0, 3), dtype=np.float32) 
+        self.cloud = np.empty((0, 3), dtype=np.float32)
 
-        self.pub = self.create_publisher(PointCloud2, "/merged_cloud/obstacles", 10)
-        self.region_pub = self.create_publisher(MarkerArray, "/merged_cloud/regions", 10)
+        # Publisher for colored obstacle cloud
+        self.pub = self.create_publisher(
+            PointCloud2,
+            "/merged_cloud/obstacles",
+            10,
+        )
 
         self._sub_zed1 = self.create_subscription(
             PointCloud2,
@@ -36,13 +40,25 @@ class PointCloud(Node):
         )
 
     def _parse(self, msg: PointCloud2) -> np.ndarray:
-        structured = np.array(list(pc2.read_points(msg, field_names=("x","y","z"), skip_nans=True)))
+        structured = np.array(
+            list(point_cloud2.read_points(
+                msg,
+                field_names=("x", "y", "z"),
+                skip_nans=True,
+            ))
+        )
+
         if structured.size == 0:
             return np.empty((0, 3), dtype=np.float32)
-        return structured.astype(np.float32)
+
+        return np.column_stack(
+            [structured["x"], structured["y"], structured["z"]]
+        ).astype(np.float32)
+
 
     def _merge(self) -> None:
         self.cloud = np.concatenate((self._cloud1, self._cloud2), axis=0)
+        
 
     def _cb_zed1(self, msg: PointCloud2) -> None:
         self._cloud1 = self._parse(msg)
