@@ -87,10 +87,8 @@ class PointCloud(Node):
             x, y, z = p
 
             if obstacle_mask[i]:
-                
                 r, g, b = 255, 0, 0
             else:
-    
                 r, g, b = 255, 255, 255
 
             rgb = struct.unpack('I', struct.pack('BBBB', b, g, r, 0))[0]
