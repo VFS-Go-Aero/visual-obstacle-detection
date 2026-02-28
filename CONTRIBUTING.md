@@ -21,9 +21,12 @@ visual-obstacle-detection/
 ├── CHANGELOG.md
 ├── CONTRIBUTING.md
 ├── LICENSE
-├── launch_files/                # ROS 2 launch files
-│   ├── multi_zed.launch.py
-│   └── multi_zed_tf.launch.py
+├── launch_files/                # ROS 2 ament_python package for launch files
+│   ├── package.xml              # package manifest
+│   ├── launch/                  # Python launch definitions
+│   │   ├── multi_zed.launch.py
+│   │   └── multi_zed_tf.launch.py
+│   └── setup.py                 # Python package setup (empty boilerplate)
 ├── scripts/                     # Utility scripts
 │   ├── fakedata.py              # ROS 2 fake obstacle publisher
 │   └── testmav.py               # MAVLink fake obstacle sender
@@ -49,12 +52,24 @@ visual-obstacle-detection/
 │   ├── visual_obstacle_detection/
 │   │   ├── __init__.py
 │   │   ├── point_cloud.py       # Point cloud subscriber node
-│   │   └── publisher.py         # Example publisher node
+│   │   ├── publisher.py         # Example publisher node
+│   │   └── obstacle_detection.py # Obstacle detection node entry point
 │   └── test/                    # ament lint + pytest tests
 │       ├── test_copyright.py
 │       ├── test_flake8.py
 │       └── test_pep257.py
 ```
+> **Note:** the repository now hosts *three* ROS 2 `ament_python` packages:
+> `visual_obstacle_detection`, `scan_to_mavlink`, and `launch_files`. Each
+> package has its own `package.xml` and `setup.py` and is built independently
+> by `colcon`.
+## Versioning & Changelog
+
+When you prepare a release, make sure to update `CHANGELOG.md` under the
+**Unreleased** section with your changes. After the release is cut, bump the
+`version` fields in each package's `setup.py`/`package.xml` and add a new
+header in the changelog with the release date. The CI workflow will pick up
+the new version automatically.
 
 ## ROS 2 Package Guidelines
 
