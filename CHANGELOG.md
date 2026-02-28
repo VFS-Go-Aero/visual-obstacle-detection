@@ -5,7 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+
+## [0.5.0] - 2026-02-28
+
+### Added
+
+- Created new `launch_files` ROS 2 package with `package.xml` and moved launch scripts into `launch_files/launch/`.
+  - Included dual-camera ZED launch files: `multi_zed.launch.py` and `multi_zed_tf.launch.py`.
+
+### Changed
+
+- Relocated existing launch files from the repository root into the new `launch_files/launch` directory for proper packaging.
+- Updated ROS2 CI workflow to run tests for the new `launch_files` package alongside existing packages.
 
 ## [0.4.4] - 2026-02-27
 
@@ -118,7 +129,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated ZED2 transform parameters to zero.
 - Updated static transform publisher arguments for clarity.
 
-[Unreleased]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.4.3...HEAD
+[Unreleased]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.4.4...v0.5.0
 [0.4.3]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.4.2...v0.4.3
 [0.4.2]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.4.0...v0.4.1

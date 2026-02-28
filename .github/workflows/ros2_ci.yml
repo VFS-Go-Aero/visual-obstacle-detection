@@ -49,3 +49,10 @@ jobs:
           ROS_DISTRO: humble
           DOCKER_IMAGE: ros:humble-ros-base-jammy
           PROJECT_REL_PATH: scan_to_mavlink
+
+      - name: Test launch_files package
+        uses: "ros-industrial/industrial_ci@master"
+        env:
+          ROS_DISTRO: humble
+          DOCKER_IMAGE: ros:humble-ros-base-jammy
+          PROJECT_REL_PATH: launch_files
