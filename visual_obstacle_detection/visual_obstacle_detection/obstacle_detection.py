@@ -41,7 +41,7 @@ class PointCloud(Node):
 
     def _parse(self, msg: PointCloud2) -> np.ndarray:
         structured = np.array(
-            list(point_cloud2.read_points(
+            list(pc2.read_points(
                 msg,
                 field_names=("x", "y", "z"),
                 skip_nans=True,
