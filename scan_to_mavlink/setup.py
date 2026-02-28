@@ -4,7 +4,7 @@ package_name = "scan_to_mavlink"
 
 setup(
     name=package_name,
-    version="0.4.3",
+    version="0.4.4",
     packages=[package_name],
     data_files=[
         ("share/ament_index/resource_index/packages",
@@ -15,6 +15,7 @@ setup(
     zip_safe=True,
     maintainer="Vertical Flight Systems Purdue",
     maintainer_email="vfspurdue@gmail.com",
+    maintainer_url="https://vfspurdue.com",
     description="Converts LaserScan data to MAVLink obstacle distance messages",
     license="MIT",
     tests_require=["pytest"],
@@ -23,4 +24,5 @@ setup(
             "scan_to_mavlink_node = scan_to_mavlink.scan_to_mavlink_node:main",
         ],
     },
+    url="https://github.com/VFS-Go-Aero/visual-obstacle-detection",
 )

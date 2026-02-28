@@ -231,6 +231,54 @@ Fix all warnings and errors before submitting.
 - Request a review from at least one maintainer.
 - Update [CHANGELOG.md](CHANGELOG.md) under the `[Unreleased]` section with a summary of your changes.
 
+### Additional PR Standards
+
+- Any pull request (PR) targeting the `main` branch must meet all repository standards before merging. This includes:
+  - Passing all CI checks and linters.
+  - Receiving approval from at least one other team member.
+  - Ensuring that the changes are well-documented and do not introduce unresolved issues.
+
+By enforcing these standards, we maintain the integrity and stability of the `main` branch.
+
+## Development Workflow
+
+### Branching Strategy
+
+- The repository has two primary branches: `main` and `dev`.
+- All other branches must be designated as either:
+  - **Feature branches**: Named `feature/[branch-name]`
+  - **Hotfix branches**: Named `hotfix/[branch-name]`
+
+### Merging Rules
+
+- Direct commits to `main` are prohibited.
+- Only `dev` and `hotfix` branches are allowed to merge into `main`.
+- Feature branches can only merge into:
+  - Another feature branch
+  - The `dev` branch
+- All merges into `main` or `dev` must be done via a pull request (PR).
+- Merges into `main` require approval from at least one other team member.
+
+### Post-Merge Actions
+
+- When a feature branch is merged into `dev`, it must either be deleted or fast-forwarded unless there are other incomplete developments on the branch.
+- After merging `dev` into `main`, the `dev` branch must be fast-forwarded to avoid circular merge commits.
+
+### Prohibited Actions
+
+- Destructive actions such as resets or rebasing are not allowed.
+- Squash-merging is prohibited.
+- Only non-destructive and reversible actions are permitted, such as merging, pulling, and fast-forwarding.
+
+By following these rules, we ensure a clean, collaborative, and transparent development process.
+
+### Handling Unreleased Changes
+
+- If there are already unreleased changes in the `dev` branch, any new changes must be combined with the existing unreleased changes to maintain a single, cohesive set of updates.
+- Ensure that the combined changes are well-documented and do not introduce conflicts or inconsistencies.
+
+By consolidating unreleased changes, we maintain clarity and avoid redundant or conflicting updates.
+
 ## License
 
 By contributing, you agree that your contributions will be licensed under the project's [MIT License](LICENSE).
