@@ -51,7 +51,7 @@ class PointCloud(Node):
             10,
         )
 
-	self._merged_pub = self.create_publisher(PointCloud2, "/merged_cloud", 10)
+    self._merged_pub = self.create_publisher(PointCloud2, "/merged_cloud", 10)
 
     def _parse(self, msg: PointCloud2) -> np.ndarray:
         """
@@ -82,14 +82,14 @@ class PointCloud(Node):
         ).astype(np.float32)
 
     def _merge(self) -> None:
-      	"""Concatenate the two camera clouds and publish on /merged_cloud."""
-      	self.cloud = np.concatenate((self._cloud1, self._cloud2), axis=0)
-      	self.get_logger().info(f"merged cloud: {self.cloud.shape[0]} pts")
-      	header = std_msgs.Header()
-      	header.stamp = self.get_clock().now().to_msg()
-      	header.frame_id = "base_link"
-      	msg = point_cloud2.create_cloud_xyz32(header, self.cloud.tolist())
-      	self._merged_pub.publish(msg)
+        """Concatenate the two camera clouds and publish on /merged_cloud."""
+        self.cloud = np.concatenate((self._cloud1, self._cloud2), axis=0)
+        self.get_logger().info(f"merged cloud: {self.cloud.shape[0]} pts")
+        header = std_msg.Header()
+        header.stamp = self.get_clock().now().to_msg()
+        header.frame_id = "base_link"
+        msg = point_cloud2.create_cloud_xyz32(header, self.cloud.tolist())
+        self._merged_pub.publish(msg)
 
     def _cb_zed1(self, msg: PointCloud2) -> None:
         self._cloud1 = self._parse(msg)
