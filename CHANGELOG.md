@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [0.6.0] - 2026-02-28
+
+### Added
+
+- Added `obstacle_detection` console script entry point for the new obstacle detection node.
+- Merged point cloud publisher on `/merged_cloud` topic in the `PointCloud` node using `create_cloud_xyz32`.
+
+### Changed
+
+- Updated `CONTRIBUTING.md` to document the new package structure and add release/versioning instructions.
+
+### Fixed
+
+- Corrected indentation for publisher initialization in `point_cloud.py`.
+- Corrected indentation and minor formatting issues in `point_cloud.py`.
+- Renamed console script from `obstacle_detector` to `obstacle_detection` and updated node name accordingly.
 
 ## [0.5.0] - 2026-02-28
 
@@ -129,7 +147,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated ZED2 transform parameters to zero.
 - Updated static transform publisher arguments for clarity.
 
-[Unreleased]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.4.4...v0.5.0
 [0.4.3]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.4.2...v0.4.3
 [0.4.2]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.4.1...v0.4.2
