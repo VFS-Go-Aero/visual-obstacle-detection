@@ -125,7 +125,7 @@ class PointCloud(Node):
             marker.color.a = 0.3
             marker_array.markers.append(marker)
 
-        self.region_pub.publish(marker_array)
+        #self.region_pub.publish(marker_array)
 
 def main():
     rclpy.init()
