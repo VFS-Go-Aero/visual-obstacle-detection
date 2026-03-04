@@ -1,3 +1,8 @@
+#!/usr/bin/env python3
+
+import numpy as np
+import struct
+
 import rclpy
 from rclpy.node import Node
 import numpy as np
