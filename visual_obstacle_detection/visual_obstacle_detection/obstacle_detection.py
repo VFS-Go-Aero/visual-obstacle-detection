@@ -5,11 +5,14 @@ import struct
 
 import rclpy
 from rclpy.node import Node
+import numpy as np
+import struct
 
 from sensor_msgs.msg import PointCloud2, PointField
-from sensor_msgs_py import point_cloud2
-from std_msgs.msg import Header
+import sensor_msgs_py.point_cloud2 as pc2
 
+from visualization_msgs.msg import Marker, MarkerArray
+from std_msgs.msg import Header
 
 class PointCloud(Node):
 
@@ -43,7 +46,7 @@ class PointCloud(Node):
 
     def _parse(self, msg: PointCloud2) -> np.ndarray:
         structured = np.array(
-            list(point_cloud2.read_points(
+            list(pc2.read_points(
                 msg,
                 field_names=("x", "y", "z"),
                 skip_nans=True,
@@ -57,75 +60,100 @@ class PointCloud(Node):
             [structured["x"], structured["y"], structured["z"]]
         ).astype(np.float32)
 
+
     def _merge(self) -> None:
         self.cloud = np.concatenate((self._cloud1, self._cloud2), axis=0)
+        
+
+    def _cb_zed1(self, msg: PointCloud2) -> None:
+        self._cloud1 = self._parse(msg)
+        self._merge()
+        self._detect_and_publish()
+
+    def _cb_zed2(self, msg: PointCloud2) -> None:
+        self._cloud2 = self._parse(msg)
+        self._merge()
         self._detect_and_publish()
 
     def _detect_and_publish(self) -> None:
-
         if self.cloud.shape[0] == 0:
             return
 
-        pts = self.cloud
+        min_dist, max_dist, min_height = 0.5, 5.0, 0.1
+        x_min, x_max = -5.0, 5.0
+        y_min, y_max = -5.0, 5.0
+        z_min, z_max = -5.0, 5.0
 
-        min_dist = 0.5
-        max_dist = 5.0
-        min_height = 0.1
+        x = self.cloud[:,0]
+        y = self.cloud[:,1]
+        z = self.cloud[:,2]
+        dist = np.sqrt(x**2 + y**2 + z**2)
 
-        distances = np.linalg.norm(pts[:, :2], axis=1)
-
-        obstacle_mask = (
-            (distances > min_dist) &
-            (distances < max_dist) &
-            (pts[:, 2] > min_height)
-        )
+        obstacle_mask = (dist>min_dist)&(dist<max_dist)&(z>min_height)&(x>x_min)&(x<x_max)&(y>y_min)&(y<y_max)&(z>z_min)&(z<z_max)
 
         colored_points = []
-
-        for i, p in enumerate(pts):
-
-            x, y, z = p
-
+        for i, p in enumerate(self.cloud):
+            px, py, pz = p
             if obstacle_mask[i]:
                 r, g, b = 255, 0, 0
             else:
                 r, g, b = 255, 255, 255
-
             rgb = struct.unpack('I', struct.pack('BBBB', b, g, r, 0))[0]
-            colored_points.append([x, y, z, rgb])
+            colored_points.append([px, py, pz, rgb])
 
         header = Header()
         header.stamp = self.get_clock().now().to_msg()
         header.frame_id = "map"
 
         fields = [
-            PointField(name='x', offset=0,
-                       datatype=PointField.FLOAT32, count=1),
-            PointField(name='y', offset=4,
-                       datatype=PointField.FLOAT32, count=1),
-            PointField(name='z', offset=8,
-                       datatype=PointField.FLOAT32, count=1),
-            PointField(name='rgb', offset=12,
-                       datatype=PointField.UINT32, count=1),
+            PointField(name='x', offset=0, datatype=PointField.FLOAT32, count=1),
+            PointField(name='y', offset=4, datatype=PointField.FLOAT32, count=1),
+            PointField(name='z', offset=8, datatype=PointField.FLOAT32, count=1),
+            PointField(name='rgb', offset=12, datatype=PointField.UINT32, count=1),
         ]
 
-        msg = point_cloud2.create_cloud(header, fields, colored_points)
-        self.pub.publish(msg)
+        cloud_msg = pc2.create_cloud(header, fields, colored_points)
+        self.pub.publish(cloud_msg)
 
-    def _cb_zed1(self, msg: PointCloud2) -> None:
-        self._cloud1 = self._parse(msg)
-        self._merge()
+        # 3x3 regions for visualization
+        marker_array = MarkerArray()
+        region_width = (x_max - x_min)/3
+        region_height = (z_max - z_min)/3
+        region_depth = (y_max - y_min)
 
-    def _cb_zed2(self, msg: PointCloud2) -> None:
-        self._cloud2 = self._parse(msg)
-        self._merge()
+        for r in range(9):
+            marker = Marker()
+            marker.header.frame_id = "map"
+            marker.header.stamp = self.get_clock().now().to_msg()
+            marker.ns = "regions"
+            marker.id = r
+            marker.type = Marker.CUBE
+            marker.action = Marker.ADD
 
+            row = r // 3
+            col = r % 3
+            marker.pose.position.x = x_min + (col+0.5)*region_width
+            marker.pose.position.y = (y_min + y_max)/2
+            marker.pose.position.z = z_min + (row+0.5)*region_height
+            marker.pose.orientation.w = 1.0
 
-def main() -> None:
+            marker.scale.x = region_width
+            marker.scale.y = region_depth
+            marker.scale.z = region_height
+            marker.color.r = 0.0
+            marker.color.g = 1.0
+            marker.color.b = 0.0
+            marker.color.a = 0.3
+            marker_array.markers.append(marker)
+
+        #self.region_pub.publish(marker_array)
+
+def main():
     rclpy.init()
-    rclpy.spin(PointCloud())
+    node = PointCloud()
+    rclpy.spin(node)
+    node.destroy_node()
     rclpy.shutdown()
-
 
 if __name__ == "__main__":
     main()
