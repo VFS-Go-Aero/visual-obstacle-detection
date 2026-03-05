@@ -14,7 +14,7 @@ from std_msgs.msg import Header
 # ── sector-map config ─────────────────────────────────────────────────────────
 N_AZ       = 32     # azimuth bins   (360 / 32 = 11.25° each)
 N_EL       = 16     # elevation bins (180 / 16 = 11.25° each)
-DIST_BIN_W = 0.5    # distance shell width (meters)
+DIST_BIN_W = 0.5    # distance shell width (metres)
 MIN_POINTS = 3      # min points in a shell to count as a real obstacle
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -37,11 +37,11 @@ def build_sector_map(points: np.ndarray,
     if points.shape[0] == 0:
         return np.zeros(0, dtype=bool)
 
-    # directions + distances from origin
+    # drop NaN and zero-distance points
+    finite_mask = np.isfinite(points).all(axis=1)
     dists = np.linalg.norm(points, axis=1)
+    valid = finite_mask & (dists > 0)
 
-    # drop zero-distance points to avoid divide-by-zero
-    valid = dists > 0
     if not np.any(valid):
         return np.zeros(len(points), dtype=bool)
 
@@ -66,6 +66,8 @@ def build_sector_map(points: np.ndarray,
             sector_indices = np.where(mask)[0]
 
             max_d      = sector_dists.max()
+            if not np.isfinite(max_d) or max_d <= 0:
+                continue
             bin_edges  = np.arange(0, max_d + dist_bin_w, dist_bin_w)
             bin_ids    = np.digitize(sector_dists, bin_edges) - 1   # 0-indexed
 
