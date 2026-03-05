@@ -24,6 +24,7 @@ setup(
             "publisher = visual_obstacle_detection.publisher:main",
             "obstacle_detection = visual_obstacle_detection.obstacle_detection:main",
             "scan_to_mav_3D = visual_obstacle_detection.scan_to_mav_3D:main",
+            "scan_to_mavlink_sid = visual_obstacle_detection.scan_to_mavlink_sid:main",
         ],
     },
     url="https://github.com/VFS-Go-Aero/visual-obstacle-detection",
