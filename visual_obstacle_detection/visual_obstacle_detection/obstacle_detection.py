@@ -12,8 +12,8 @@ from std_msgs.msg import Header
 
 
 # ── sector-map config ─────────────────────────────────────────────────────────
-N_AZ       = 32     # azimuth bins   (360 / 32 = 11.25° each)
-N_EL       = 16     # elevation bins (180 / 16 = 11.25° each)
+N_AZ = 32     # azimuth bins   (360 / 32 = 11.25° each)
+N_EL = 16     # elevation bins (180 / 16 = 11.25° each)
 DIST_BIN_W = 0.5    # distance shell width (metres)
 MIN_POINTS = 3      # min points in a shell to count as a real obstacle
 # ─────────────────────────────────────────────────────────────────────────────
@@ -25,14 +25,17 @@ def build_sector_map(points: np.ndarray,
                      dist_bin_w: float = DIST_BIN_W,
                      min_pts: int = MIN_POINTS):
     """
-    Divide the point cloud into angular sectors and, for each sector, find the
-    near edge of the first distance-bin that contains >= min_pts points.
+    Build a sector map finding the nearest obstacle in each angular sector.
+
+    Divide the point cloud into angular sectors and, for each sector, find
+    the near edge of the first distance-bin that contains >= min_pts points.
 
     Returns
     -------
     winner_mask : bool array, shape (N,)
         True for every point that is the reported obstacle representative of
         its sector (i.e. the closest point inside the first dense bin).
+
     """
     if points.shape[0] == 0:
         return np.zeros(0, dtype=bool)
@@ -48,8 +51,8 @@ def build_sector_map(points: np.ndarray,
     dirs = np.zeros_like(points)
     dirs[valid] = points[valid] / dists[valid, np.newaxis]
 
-    az     = np.arctan2(dirs[:, 1], dirs[:, 0])            # −π … π
-    el     = np.arcsin(np.clip(dirs[:, 2], -1.0, 1.0))     # −π/2 … π/2
+    az = np.arctan2(dirs[:, 1], dirs[:, 0])            # −π … π
+    el = np.arcsin(np.clip(dirs[:, 2], -1.0, 1.0))     # −π/2 … π/2
 
     az_idx = ((az + np.pi) / (2 * np.pi) * n_az).astype(int) % n_az
     el_idx = ((el + np.pi / 2) / np.pi * n_el).astype(int).clip(0, n_el - 1)
@@ -62,21 +65,21 @@ def build_sector_map(points: np.ndarray,
             if not np.any(mask):
                 continue
 
-            sector_dists   = dists[mask]
+            sector_dists = dists[mask]
             sector_indices = np.where(mask)[0]
 
-            max_d      = sector_dists.max()
+            max_d = sector_dists.max()
             if not np.isfinite(max_d) or max_d <= 0:
                 continue
-            bin_edges  = np.arange(0, max_d + dist_bin_w, dist_bin_w)
-            bin_ids    = np.digitize(sector_dists, bin_edges) - 1   # 0-indexed
+            bin_edges = np.arange(0, max_d + dist_bin_w, dist_bin_w)
+            bin_ids = np.digitize(sector_dists, bin_edges) - 1   # 0-indexed
 
             # walk near → far; first bin with enough points wins
             for b in range(len(bin_edges) - 1):
                 in_bin = bin_ids == b
                 if in_bin.sum() >= min_pts:
                     pts_in_bin = sector_indices[in_bin]
-                    closest    = pts_in_bin[np.argmin(sector_dists[in_bin])]
+                    closest = pts_in_bin[np.argmin(sector_dists[in_bin])]
                     winner_mask[closest] = True
                     break
             # no bin reached threshold → sector is clear, no winner
@@ -91,7 +94,7 @@ class ObstacleDetection(Node):
 
         self._cloud1 = np.empty((0, 3), dtype=np.float32)
         self._cloud2 = np.empty((0, 3), dtype=np.float32)
-        self.cloud   = np.empty((0, 3), dtype=np.float32)
+        self.cloud = np.empty((0, 3), dtype=np.float32)
 
         # publish only the obstacle-representative points (red)
         self.pub = self.create_publisher(
@@ -172,7 +175,7 @@ class ObstacleDetection(Node):
         ]
 
         header = Header()
-        header.stamp    = self.get_clock().now().to_msg()
+        header.stamp = self.get_clock().now().to_msg()
         header.frame_id = "map"
 
         fields = [

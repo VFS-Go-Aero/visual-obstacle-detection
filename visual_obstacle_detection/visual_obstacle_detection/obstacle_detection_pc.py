@@ -5,14 +5,13 @@ import struct
 
 import rclpy
 from rclpy.node import Node
-import numpy as np
-import struct
 
 from sensor_msgs.msg import PointCloud2, PointField
 import sensor_msgs_py.point_cloud2 as pc2
 
 from visualization_msgs.msg import Marker, MarkerArray
 from std_msgs.msg import Header
+
 
 class PointCloud(Node):
 
@@ -60,10 +59,8 @@ class PointCloud(Node):
             [structured["x"], structured["y"], structured["z"]]
         ).astype(np.float32)
 
-
     def _merge(self) -> None:
         self.cloud = np.concatenate((self._cloud1, self._cloud2), axis=0)
-        
 
     def _cb_zed1(self, msg: PointCloud2) -> None:
         self._cloud1 = self._parse(msg)
@@ -84,12 +81,17 @@ class PointCloud(Node):
         y_min, y_max = -5.0, 5.0
         z_min, z_max = -5.0, 5.0
 
-        x = self.cloud[:,0]
-        y = self.cloud[:,1]
-        z = self.cloud[:,2]
+        x = self.cloud[:, 0]
+        y = self.cloud[:, 1]
+        z = self.cloud[:, 2]
         dist = np.sqrt(x**2 + y**2 + z**2)
 
-        obstacle_mask = (dist>min_dist)&(dist<max_dist)&(z>min_height)&(x>x_min)&(x<x_max)&(y>y_min)&(y<y_max)&(z>z_min)&(z<z_max)
+        obstacle_mask = (
+            (dist > min_dist) & (dist < max_dist) & (z > min_height)
+            & (x > x_min) & (x < x_max)
+            & (y > y_min) & (y < y_max)
+            & (z > z_min) & (z < z_max)
+        )
 
         colored_points = []
         for i, p in enumerate(self.cloud):
@@ -146,7 +148,8 @@ class PointCloud(Node):
             marker.color.a = 0.3
             marker_array.markers.append(marker)
 
-        #self.region_pub.publish(marker_array)
+        # self.region_pub.publish(marker_array)
+
 
 def main():
     rclpy.init()
@@ -154,6 +157,7 @@ def main():
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()
+
 
 if __name__ == "__main__":
     main()
