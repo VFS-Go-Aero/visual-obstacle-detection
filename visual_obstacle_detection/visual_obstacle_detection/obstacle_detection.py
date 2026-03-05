@@ -168,7 +168,11 @@ class ObstacleDetection(Node):
         )
 
         # pack as XYZ + RGB (red)
-        red_packed = struct.unpack('I', struct.pack('BBBB', 0, 0, 255, 0))[0]  # BGR order
+        # BGR order for PCL-compatible RGB field
+        red_packed = struct.unpack(
+            'I',
+            struct.pack('BBBB', 0, 0, 255, 0),
+        )[0]
         colored_points = [
             [p[0], p[1], p[2], red_packed]
             for p in obstacle_points
