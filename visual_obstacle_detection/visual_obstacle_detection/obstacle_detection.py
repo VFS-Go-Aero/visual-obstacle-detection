@@ -183,10 +183,30 @@ class ObstacleDetection(Node):
         header.frame_id = "map"
 
         fields = [
-            PointField(name='x',   offset=0,  datatype=PointField.FLOAT32, count=1),
-            PointField(name='y',   offset=4,  datatype=PointField.FLOAT32, count=1),
-            PointField(name='z',   offset=8,  datatype=PointField.FLOAT32, count=1),
-            PointField(name='rgb', offset=12, datatype=PointField.UINT32,  count=1),
+            PointField(
+                name='x',
+                offset=0,
+                datatype=PointField.FLOAT32,
+                count=1,
+            ),
+            PointField(
+                name='y',
+                offset=4,
+                datatype=PointField.FLOAT32,
+                count=1,
+            ),
+            PointField(
+                name='z',
+                offset=8,
+                datatype=PointField.FLOAT32,
+                count=1,
+            ),
+            PointField(
+                name='rgb',
+                offset=12,
+                datatype=PointField.UINT32,
+                count=1,
+            ),
         ]
 
         cloud_msg = pc2.create_cloud(header, fields, colored_points)
