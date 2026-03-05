@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- New `scan_to_mav_3D` module (`scan_to_mav_3D.py`) with a `MovingFakeObstacle1D` node that subscribes to dual ZED camera point clouds, merges them, filters obstacles by XY distance and height, and publishes each obstacle as an `ObstacleDistance3D` message to `/mavros/obstacle_distance_3d/send`.
+- New `scan_to_mavlink_sid` module (`scan_to_mavlink_sid.py`) with a `ScanToMavlinkSid` node that subscribes to the merged point cloud on `/merged_cloud`, filters obstacles using configurable ROS parameters (`min_distance`, `max_distance`, `min_height`, `max_obstacles`), selects the closest N obstacles, and publishes them as `ObstacleDistance3D` messages to MAVROS.
+- `scan_to_mav_3D` and `scan_to_mavlink_sid` console script entry points in `setup.py`.
+
+### Fixed
+
+- Removed extra blank line in `scan_to_mavlink_node.py`.
+
 ## [0.6.0] - 2026-02-28
 
 ### Added
