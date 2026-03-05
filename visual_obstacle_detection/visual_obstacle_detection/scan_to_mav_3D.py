@@ -17,7 +17,7 @@ class MovingFakeObstacle1D(Node):
     """Publish fake obstacle data at 10 Hz."""
 
     def __init__(self) -> None:
-        super().__init__("moving_fake_obstacle_1d")
+        super().__init__("scan_to_mav_3D")
         
         self.sub_zed1 = self.create_subscription(
             PointCloud2,
