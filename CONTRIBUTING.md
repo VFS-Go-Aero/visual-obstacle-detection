@@ -52,8 +52,8 @@ visual-obstacle-detection/
 │   ├── visual_obstacle_detection/
 │   │   ├── __init__.py
 │   │   ├── point_cloud.py       # Point cloud subscriber node
-│   │   ├── publisher.py         # Example publisher node
-│   │   └── obstacle_detection.py # Obstacle detection node entry point
+│   │   ├── obstacle_detection.py # Sector-map obstacle detection node
+│   │   └── obstacle_detection_pc.py # Distance/bbox obstacle filtering with MarkerArray
 │   └── test/                    # ament lint + pytest tests
 │       ├── test_copyright.py
 │       ├── test_flake8.py
