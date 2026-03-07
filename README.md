@@ -6,16 +6,21 @@
 Visual Obstacle Detection is a project designed to detect obstacles using visual data. It leverages advanced algorithms to process point clouds and publish relevant information for use within the **Human Emergency Aerial Rescue and Transport (HEART)** Aircraft. This project is a critical component of the perception stack for the HEART Drone, enabling it to navigate complex environments safely and efficiently.
 
 ## Features
-- Point cloud processing
-- Obstacle detection and publishing
-- ROS (Robot Operating System) integration
+- Point cloud processing and merging from dual ZED X cameras
+- Sector-map-based obstacle detection dividing the point cloud into azimuth/elevation bins
+- Distance/bounding-box obstacle filtering with RGB coloring and 3×3 region `MarkerArray` visualization
+- MAVLink obstacle-distance message conversion via `scan_to_mavlink`
+- ROS 2 (Humble) integration with multiple `ament_python` packages
 
 ## Repository Structure
-- `visual_obstacle_detection/`: Core functionality for obstacle detection
-- `scan_to_mavlink/`: Converts scan data to MAVLink messages
+- `visual_obstacle_detection/`: Core ROS 2 package for obstacle detection
+  - `point_cloud.py` — Point cloud subscriber and merger
+  - `obstacle_detection.py` — Sector-map-based obstacle detection node
+  - `obstacle_detection_pc.py` — Distance/bounding-box obstacle filtering with `MarkerArray` visualization
+- `scan_to_mavlink/`: Converts LaserScan data to MAVLink obstacle-distance messages
+- `launch_files/`: ROS 2 launch files for multi-camera ZED setup
 - `scripts/`: Utility scripts for testing and data generation
-- `launch_files/`: ROS launch files for running the system
-- `test/`: Unit tests for ensuring code quality
+- `bash-commands/`: Common ROS 2 CLI commands reference
 
 ## Organization
 This project is maintained by **Vertical Flight Systems Purdue**, an organization dedicated to advancing aerospace technologies through innovative software solutions. Our mission is to create reliable and efficient tools for robotics and aerospace applications. Learn more about us [here](https://vfspurdue.com/about-us/).

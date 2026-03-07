@@ -4,7 +4,7 @@ package_name = "visual_obstacle_detection"
 
 setup(
     name=package_name,
-    version="0.6.0",
+    version="0.7.0",
     packages=[package_name],
     data_files=[
         ("share/ament_index/resource_index/packages", ["resource/" + package_name]),
@@ -21,8 +21,8 @@ setup(
     entry_points={
         "console_scripts": [
             "point_cloud = visual_obstacle_detection.point_cloud:main",
-            "publisher = visual_obstacle_detection.publisher:main",
             "obstacle_detection = visual_obstacle_detection.obstacle_detection:main",
+            "obstacle_detection_pc = visual_obstacle_detection.obstacle_detection_pc:main",
             "scan_to_mav_3D = visual_obstacle_detection.scan_to_mav_3D:main",
             "scan_to_mavlink_sid = visual_obstacle_detection.scan_to_mavlink_sid:main",
         ],

@@ -13,6 +13,11 @@ ros2 topic pub /mavros/rangefinder_sub sensor_msgs/Range "{
 }"
 ```
 
+## Source
+```bash
+source ../install/local_setup.bash
+```
+
 ## LaserScan
 
 ```bash

@@ -18,6 +18,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Removed extra blank line in `scan_to_mavlink_node.py`.
 
+## [0.7.0] - 2026-03-04
+
+### Added
+
+- New `obstacle_detection_pc` module (`obstacle_detection_pc.py`) with a `PointCloud` node providing distance/bounding-box-based obstacle filtering, RGB coloring of obstacle vs. non-obstacle points, and 3×3 region visualization using `MarkerArray`.
+- `obstacle_detection_pc` console script entry point in `setup.py`.
+- `build_sector_map()` function in `obstacle_detection.py` — sector-based obstacle detection that divides the point cloud into azimuth/elevation bins and finds the nearest dense distance-shell in each sector.
+- Configurable sector-map parameters (`N_AZ`, `N_EL`, `DIST_BIN_W`, `MIN_POINTS`) in `obstacle_detection.py`.
+- NaN and zero-distance point filtering in sector-map construction.
+- Source command section in `bash-commands/README.md`.
+
+### Changed
+
+- Renamed `PointCloud` class to `ObstacleDetection` and node name to `obstacle_detection_segment` in `obstacle_detection.py`.
+- Replaced simple distance/height threshold obstacle filtering with sector-map-based detection in `obstacle_detection.py`.
+- Obstacle cloud on `/merged_cloud/obstacles` now publishes only obstacle-representative points (colored red) instead of the full cloud with per-point coloring.
+- Updated `main()` in `obstacle_detection.py` to instantiate `ObstacleDetection` and properly destroy the node before shutdown.
+- Switched `point_cloud2` import from `from sensor_msgs_py import point_cloud2` to `import sensor_msgs_py.point_cloud2 as pc2` in `obstacle_detection.py`.
+- Reformatted code in `obstacle_detection.py` for consistency and readability.
+
+### Removed
+
+- Removed `publisher.py` (`MyPublisher` node) and its `publisher` console script entry point from `setup.py`.
+
 ## [0.6.0] - 2026-02-28
 
 ### Added
@@ -158,7 +182,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated ZED2 transform parameters to zero.
 - Updated static transform publisher arguments for clarity.
 
-[Unreleased]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.4.4...v0.5.0
 [0.4.3]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.4.2...v0.4.3
