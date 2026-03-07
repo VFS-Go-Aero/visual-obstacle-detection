@@ -12,12 +12,14 @@ from std_msgs.msg import Header
 
 
 # ── sector-map config ─────────────────────────────────────────────────────────
-N_AZ = 32     # azimuth bins   (360 / 32 = 11.25° each)
-N_EL = 16     # elevation bins (180 / 16 = 11.25° each)
+N_AZ = 8     # azimuth bins   (360 / 8 = 45° each)
+N_EL = 8     # elevation bins (180 / 8 = 45° each)
 DIST_BIN_W = 0.5    # distance shell width (metres)
 MIN_POINTS = 3      # min points in a shell to count as a real obstacle
 # ─────────────────────────────────────────────────────────────────────────────
 
+# this is used to assign a unique color to each sector's obstacle representative point
+COLOR_PRIME = 0x01234567
 
 def build_sector_map(points: np.ndarray,
                      n_az: int = N_AZ,
@@ -58,6 +60,7 @@ def build_sector_map(points: np.ndarray,
     el_idx = ((el + np.pi / 2) / np.pi * n_el).astype(int).clip(0, n_el - 1)
 
     winner_mask = np.zeros(len(points), dtype=bool)
+    winner_sector = np.zeros(len(points), dtype=np.uint32)
 
     for a in range(n_az):
         for e in range(n_el):
@@ -81,10 +84,12 @@ def build_sector_map(points: np.ndarray,
                     pts_in_bin = sector_indices[in_bin]
                     closest = pts_in_bin[np.argmin(sector_dists[in_bin])]
                     winner_mask[closest] = True
+                    sector_id = a * n_el + e
+                    winner_sector[closest] = (sector_id * COLOR_PRIME) & 0xFFFFFF
                     break
             # no bin reached threshold → sector is clear, no winner
 
-    return winner_mask
+    return winner_mask, winner_sector
 
 
 class ObstacleDetection(Node):
@@ -157,9 +162,11 @@ class ObstacleDetection(Node):
         if self.cloud.shape[0] == 0:
             return
 
-        winner_mask = build_sector_map(self.cloud)
+        winner_mask, winner_sector = build_sector_map(self.cloud)
 
-        obstacle_points = self.cloud[winner_mask]
+        obstacle_points  = self.cloud[winner_mask]
+        obstacle_sectors = winner_sector[winner_mask]
+
         n_obs = obstacle_points.shape[0]
 
         self.get_logger().debug(
@@ -167,16 +174,10 @@ class ObstacleDetection(Node):
             f"from {self.cloud.shape[0]} total points"
         )
 
-        # pack as XYZ + RGB (red)
-        # BGR order for PCL-compatible RGB field
-        red_packed = struct.unpack(
-            'I',
-            struct.pack('BBBB', 0, 0, 255, 0),
-        )[0]
+        # pack as XYZ + id (int32) for coloring in RViz; the id is derived from the sector index
         colored_points = [
-            [p[0], p[1], p[2], red_packed]
-            for p in obstacle_points
-        ]
+            [p[0], p[1], p[2], int(s)] for p, s in zip(obstacle_points, obstacle_sectors)
+            ]
 
         header = Header()
         header.stamp = self.get_clock().now().to_msg()
