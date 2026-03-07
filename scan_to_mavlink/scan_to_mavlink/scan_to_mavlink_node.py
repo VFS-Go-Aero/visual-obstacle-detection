@@ -9,7 +9,6 @@ from rclpy.node import Node
 from mavros_msgs.msg import ObstacleDistance3D
 from geometry_msgs.msg import Point
 
-
 class MovingFakeObstacle1D(Node):
     """Publish fake obstacle data at 10 Hz."""
 
