@@ -182,7 +182,7 @@ class ObstacleDetection(Node):
 
         header = Header()
         header.stamp = self.get_clock().now().to_msg()
-        # Do not hard-code a frame_id here; the points are not transformed into 'map'.
+        header.frame_id = self._frame_id
 
         fields = [
             PointField(
