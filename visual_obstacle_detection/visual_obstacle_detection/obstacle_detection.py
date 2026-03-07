@@ -40,7 +40,7 @@ def build_sector_map(points: np.ndarray,
 
     """
     if points.shape[0] == 0:
-        return np.zeros(0, dtype=bool)
+        return np.zeros(0, dtype=bool), np.zeros(0, dtype=np.uint32)
 
     # drop NaN and zero-distance points
     finite_mask = np.isfinite(points).all(axis=1)
@@ -48,7 +48,7 @@ def build_sector_map(points: np.ndarray,
     valid = finite_mask & (dists > 0)
 
     if not np.any(valid):
-        return np.zeros(len(points), dtype=bool)
+        return np.zeros(len(points), dtype=bool), np.zeros(len(points), dtype=np.uint32)
 
     dirs = np.zeros_like(points)
     dirs[valid] = points[valid] / dists[valid, np.newaxis]
@@ -169,7 +169,7 @@ class ObstacleDetection(Node):
 
         n_obs = obstacle_points.shape[0]
 
-        self.get_logger().debug(
+        self.get_logger().info(
             f"Sector map: {n_obs} obstacle representatives "
             f"from {self.cloud.shape[0]} total points"
         )
