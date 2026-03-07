@@ -96,6 +96,7 @@ class ObstacleDetection(Node):
 
     def __init__(self) -> None:
         super().__init__("obstacle_detection_segment")
+        self._frame_id = "zed1_left_camera_frame"
 
         self._cloud1 = np.empty((0, 3), dtype=np.float32)
         self._cloud2 = np.empty((0, 3), dtype=np.float32)
