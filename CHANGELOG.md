@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Unique per-sector coloring for obstacle representative points using a hashed sector ID (`COLOR_PRIME`) instead of a single red color in `obstacle_detection.py`.
+- `frame_id` (`zed1_left_camera_frame`) set on the obstacle cloud header, required for visualization in RViz.
+- Debug logging of sector-map obstacle counts (changed from `debug` to `info` level) in `obstacle_detection.py`.
+
+### Changed
+
+- `build_sector_map()` now returns a `(winner_mask, winner_sector)` tuple, providing the sector ID for each obstacle representative point.
+- Reduced sector-map resolution from 32×16 to 8×8 azimuth/elevation bins in `obstacle_detection.py`.
+- Obstacle cloud points now carry an integer sector-derived color ID instead of a packed red RGB value.
+
 ## [0.7.0] - 2026-03-04
 
 ### Added
