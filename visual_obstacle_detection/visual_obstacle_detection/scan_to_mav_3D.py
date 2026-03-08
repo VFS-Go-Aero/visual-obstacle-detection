@@ -29,10 +29,11 @@ class ObstaclesToMAVLink(Node):
         self.n_bins = int(360 / self.increment_angle)
         self.recent_cloud = np.ndarray | None = None
         
-        self.create_subscription(PointCloud2,
-                                 "/merged_cloud/obstacles",
-                                 self.cb_obstacles,
-                                 10,
+        self.create_subscription(
+            PointCloud2,
+            "/merged_cloud/obstacles",
+            self._cb_obstacles,
+            10,
         )
         
         self.pub_3d = self.create_publisher(
