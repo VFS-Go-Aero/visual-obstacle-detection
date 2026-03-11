@@ -79,7 +79,7 @@ class ObstaclesToMAVLink(Node):
             for row in cloud:
                 x, y, z, raw_rgb = float(row[0]), float(row[1]), float(row[2]), int(row[3])
                 raw_rgb_uint32 = np.frombuffer(np.float32(raw_rgb).tobytes(), dtype=np.uint32)[0]
-                obstacle_id = raw_rgb_uint32 % 65536   # wrap into 0-65535
+                obstacle_id = int(raw_rgb_uint32 % 65536)   # wrap into 0-65535
                 
                 msg3D = ObstacleDistance3D()
                 msg3D.header.stamp = now    
