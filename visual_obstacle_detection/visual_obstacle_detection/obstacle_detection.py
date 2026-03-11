@@ -18,8 +18,6 @@ DIST_BIN_W = 0.5    # distance shell width (metres)
 MIN_POINTS = 3      # min points in a shell to count as a real obstacle
 # ─────────────────────────────────────────────────────────────────────────────
 
-# this is used to assign a unique color to each sector's obstacle representative point
-COLOR_PRIME = 0x01234567
 
 def build_sector_map(points: np.ndarray,
                      n_az: int = N_AZ,
@@ -85,7 +83,7 @@ def build_sector_map(points: np.ndarray,
                     closest = pts_in_bin[np.argmin(sector_dists[in_bin])]
                     winner_mask[closest] = True
                     sector_id = a * n_el + e
-                    winner_sector[closest] = (sector_id * COLOR_PRIME) & 0xFFFFFF
+                    winner_sector[closest] = sector_id
                     break
             # no bin reached threshold → sector is clear, no winner
 
