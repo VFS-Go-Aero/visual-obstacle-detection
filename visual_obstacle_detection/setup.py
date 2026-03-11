@@ -22,7 +22,7 @@ setup(
         "console_scripts": [
             "point_cloud = visual_obstacle_detection.point_cloud:main",
             "obstacle_detection = visual_obstacle_detection.obstacle_detection:main",
-            "obstacle_detection_pc = visual_obstacle_detection.obstacle_detection_pc:main",
+            "obstacle_to_mavlink = visual_obstacle_detection.obstacle_to_mavlink:main",
         ],
     },
     url="https://github.com/VFS-Go-Aero/visual-obstacle-detection",
