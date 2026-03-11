@@ -27,7 +27,7 @@ class ObstaclesToMAVLink(Node):
         frequency = self.get_parameter("FREQUENCY").value  
         
         self.n_bins = int(360 / self.increment_angle)
-        self.recent_cloud = np.ndarray | None = None
+        self.recent_cloud: np.ndarray | None = None
         
         self.create_subscription(
             PointCloud2,
