@@ -159,7 +159,3 @@ if __name__ == "__main__":
 #     rclpy.init()
 #     rclpy.spin(MovingFakeObstacle1D())
 #     rclpy.shutdown()
-
-
-# if __name__ == "__main__":
-#     main()
