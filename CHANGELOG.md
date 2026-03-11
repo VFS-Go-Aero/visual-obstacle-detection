@@ -9,8 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- New `scan_to_mav_3D` module (`scan_to_mav_3D.py`) with an `ObstaclesToMAVLink` node that subscribes to the obstacle point cloud on `/merged_cloud/obstacles`, reads obstacle points with `obstacle_id` fields, and publishes each obstacle as an `ObstacleDistance3D` message to `/mavros/obstacle_distance_3d/send` at a configurable frequency with configurable distance parameters (`MAX_DISTANCE`, `MIN_DISTANCE`, `FREQUENCY`).
-- `scan_to_mav_3D` console script entry point in `setup.py`.
+- New `obstacle_to_mavlink` module (`obstacle_to_mavlink.py`) with an `ObstacleToMavlink` node that subscribes to the obstacle point cloud on `/merged_cloud/obstacles`, reads obstacle points with `obstacle_id` fields, and publishes each obstacle as an `ObstacleDistance3D` message to `/mavros/obstacle_distance_3d/send` at a configurable frequency with configurable distance parameters (`MAX_DISTANCE`, `MIN_DISTANCE`, `FREQUENCY`).
+- `obstacle_to_mavlink` console script entry point in `setup.py`.
 - `frame_id` (`zed1_left_camera_frame`) set on the obstacle cloud header in `obstacle_detection.py`, required for visualization in RViz.
 
 ### Changed
