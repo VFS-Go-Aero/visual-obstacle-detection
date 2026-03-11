@@ -9,19 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Unique per-sector coloring for obstacle representative points using a hashed sector ID (`COLOR_PRIME`) instead of a single red color in `obstacle_detection.py`.
-- `frame_id` (`zed1_left_camera_frame`) set on the obstacle cloud header, required for visualization in RViz.
-- Debug logging of sector-map obstacle counts (changed from `debug` to `info` level) in `obstacle_detection.py`.
-- New `scan_to_mav_3D` module (`scan_to_mav_3D.py`) with a `MovingFakeObstacle1D` node that subscribes to dual ZED camera point clouds, merges them, filters obstacles by XY distance and height, and publishes each obstacle as an `ObstacleDistance3D` message to `/mavros/obstacle_distance_3d/send`.
-- New `scan_to_mavlink_sid` module (`scan_to_mavlink_sid.py`) with a `ScanToMavlinkSid` node that subscribes to the merged point cloud on `/merged_cloud`, filters obstacles using configurable ROS parameters (`min_distance`, `max_distance`, `min_height`, `max_obstacles`), selects the closest N obstacles, and publishes them as `ObstacleDistance3D` messages to MAVROS.
-- `scan_to_mav_3D` and `scan_to_mavlink_sid` console script entry points in `setup.py`.
-- New `obstacle_to_mavros` module (`obstacle_to_mavros.py`) with an `ObstacleToMavros` node that subscribes to the merged obstacle point cloud on `/merged_cloud/obstacles`, converts each point to an `ObstacleDistance3D` message, and publishes to `/mavros/obstacle_distance_3d/send`.
+- New `scan_to_mav_3D` module (`scan_to_mav_3D.py`) with an `ObstaclesToMAVLink` node that subscribes to the obstacle point cloud on `/merged_cloud/obstacles`, reads obstacle points with `obstacle_id` fields, and publishes each obstacle as an `ObstacleDistance3D` message to `/mavros/obstacle_distance_3d/send` at a configurable frequency with configurable distance parameters (`MAX_DISTANCE`, `MIN_DISTANCE`, `FREQUENCY`).
+- `scan_to_mav_3D` console script entry point in `setup.py`.
+- `frame_id` (`zed1_left_camera_frame`) set on the obstacle cloud header in `obstacle_detection.py`, required for visualization in RViz.
 
 ### Changed
 
-- `build_sector_map()` now returns a `(winner_mask, winner_sector)` tuple, providing the sector ID for each obstacle representative point.
+- `build_sector_map()` now returns a `(winner_mask, winner_sector)` tuple, providing the sector ID for each obstacle representative point in `obstacle_detection.py`.
 - Reduced sector-map resolution from 32×16 to 8×8 azimuth/elevation bins in `obstacle_detection.py`.
-- Obstacle cloud points now carry an integer sector-derived color ID instead of a packed red RGB value.
+- Obstacle cloud `PointField` renamed from `rgb` to `obstacle_id`, now carrying an integer sector ID instead of a packed red RGB value in `obstacle_detection.py`.
+- Sector-map obstacle count log level changed from `debug` to `info` in `obstacle_detection.py`.
+
+### Removed
+
+- Removed `obstacle_detection_pc` module (`obstacle_detection_pc.py`) and its `obstacle_detection_pc` console script entry point from `setup.py`.
 
 ### Fixed
 
