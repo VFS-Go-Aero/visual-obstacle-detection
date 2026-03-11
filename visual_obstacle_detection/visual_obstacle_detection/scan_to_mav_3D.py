@@ -1,12 +1,12 @@
 import rclpy
 from rclpy.node import Node
-from mavros_msgs.msg import ObstacleDistance3D, ObstacleDistance
+from mavros_msgs.msg import ObstacleDistance3D  # , ObstacleDistance
 from geometry_msgs.msg import Point
 from sensor_msgs.msg import PointCloud2
 from sensor_msgs_py import point_cloud2
 import numpy as np
 
-INCREMENT_ANGLE = 5.0 
+# INCREMENT_ANGLE = 5.0 
 
 
 class ObstaclesToMAVLink(Node):
@@ -14,17 +14,17 @@ class ObstaclesToMAVLink(Node):
     def __init__(self) -> None:
         super().__init__("scan_to_mav_3D")
         
-        self.declare_parameter("INCREMENT_ANGLE", INCREMENT_ANGLE)  
+        # self.declare_parameter("INCREMENT_ANGLE", INCREMENT_ANGLE)  
         self.declare_parameter("MAX_DISTANCE", 60.0)
         self.declare_parameter("MIN_DISTANCE", 0.2)
         self.declare_parameter("FREQUENCY", 10.0)
         
-        self._increment = self.get_parameter("INCREMENT_ANGLE").value
+        # self._increment = self.get_parameter("INCREMENT_ANGLE").value
         self._max_distance = self.get_parameter("MAX_DISTANCE").value    
         self._min_distance = self.get_parameter("MIN_DISTANCE").value    
         frequency = self.get_parameter("FREQUENCY").value  
         
-        self._n_bins = int(360 / self._increment)
+        # self._n_bins = int(360 / self._increment)
         self._latest_cloud: np.ndarray | None = None
         
         self.create_subscription(
@@ -40,18 +40,17 @@ class ObstaclesToMAVLink(Node):
             10,
         )
         
-        self._pub_2d = self.create_publisher(
-            ObstacleDistance,
-            "/obstacle_distance_2d",
-            10,
-        )
+        # self._pub_2d = self.create_publisher(
+        #     ObstacleDistance,
+        #     "/obstacle_distance_2d",
+        #     10,
+        # )
         
         self.create_timer(1.0 / frequency, self._publish)
 
         self.get_logger().info(
             f"obstacles_to_mavlink started  "
-            f"[{self._n_bins} bins × {self._increment}°, "
-            f"dist {self._min_distance}–{self._max_distance} m, "
+            f"[dist {self._min_distance}–{self._max_distance} m, "
             f"{frequency} Hz]"
         )
         
@@ -93,44 +92,44 @@ class ObstaclesToMAVLink(Node):
                 self._pub_3d.publish(msg3D)
             
             self.get_logger().debug(
-                f"Published {cloud.shape[0]} ObstacleDistance3D + 1 ObstacleDistance"
+                f"Published {cloud.shape[0]} ObstacleDistance3D"
             )
         
-        self._publish_obstacle_distance(
-            cloud if cloud is not None else np.empty((0, 4), dtype=np.float32),
-            now,
-        )
+        # self._publish_obstacle_distance(
+        #     cloud if cloud is not None else np.empty((0, 4), dtype=np.float32),
+        #     now,
+        # )
             
-    def _publish_obstacle_distance(self, cloud: np.ndarray, stamp) -> None:
-        xy = cloud[:, :2]   
-        dist2d = np.linalg.norm(xy, axis=1)
-        valid = (dist2d >= self._min_distance) & (dist2d <= self._max_distance)
-        xy = xy[valid]
-        dist2d = dist2d[valid]
-        max_in_cm = int(self._max_distance * 100)
-        bins_in_cm = np.full((self._n_bins,), max_in_cm, dtype=np.int16)
-        
-        if xy.shape[0] > 0:
-            angles_deg = np.degrees(np.arctan2(xy[:, 1], xy[:, 0])) % 360.0
-            bin_indices = (angles_deg / self._increment).astype(int) % self._n_bins
-            
-            for b in range(self._n_bins):
-                mask = bin_indices == b
-                if np.any(mask):
-                    bins_in_cm[b] = int(dist2d[mask].min() * 100)
-                    
-        msg = ObstacleDistance()
-        msg.header.stamp    = stamp
-        msg.header.frame_id = "base_link"
-        msg.sensor_type     = 0
-        msg.frame           = 12 
-        msg.increment       = self._increment
-        msg.min_distance    = int(self._min_distance * 100)
-        msg.max_distance    = int(self._max_distance * 100)
-        msg.increment_f     = float(self._increment)
-        msg.angle_offset    = 0.0
-        msg.distances       = bins_in_cm.tolist()
-        self._pub_2d.publish(msg)
+    # def _publish_obstacle_distance(self, cloud: np.ndarray, stamp) -> None:
+    #     xy = cloud[:, :2]   
+    #     dist2d = np.linalg.norm(xy, axis=1)
+    #     valid = (dist2d >= self._min_distance) & (dist2d <= self._max_distance)
+    #     xy = xy[valid]
+    #     dist2d = dist2d[valid]
+    #     max_in_cm = int(self._max_distance * 100)
+    #     bins_in_cm = np.full((self._n_bins,), max_in_cm, dtype=np.int16)
+    #     
+    #     if xy.shape[0] > 0:
+    #         angles_deg = np.degrees(np.arctan2(xy[:, 1], xy[:, 0])) % 360.0
+    #         bin_indices = (angles_deg / self._increment).astype(int) % self._n_bins
+    #         
+    #         for b in range(self._n_bins):
+    #             mask = bin_indices == b
+    #             if np.any(mask):
+    #                 bins_in_cm[b] = int(dist2d[mask].min() * 100)
+    #                 
+    #     msg = ObstacleDistance()
+    #     msg.header.stamp    = stamp
+    #     msg.header.frame_id = "base_link"
+    #     msg.sensor_type     = 0
+    #     msg.frame           = 12 
+    #     msg.increment       = self._increment
+    #     msg.min_distance    = int(self._min_distance * 100)
+    #     msg.max_distance    = int(self._max_distance * 100)
+    #     msg.increment_f     = float(self._increment)
+    #     msg.angle_offset    = 0.0
+    #     msg.distances       = bins_in_cm.tolist()
+    #     self._pub_2d.publish(msg)
         
 def main() -> None:
     rclpy.init()
