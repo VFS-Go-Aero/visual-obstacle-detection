@@ -162,7 +162,7 @@ class ObstacleDetection(Node):
 
         winner_mask, winner_sector = build_sector_map(self.cloud)
 
-        obstacle_points  = self.cloud[winner_mask]
+        obstacle_points = self.cloud[winner_mask]
         obstacle_sectors = winner_sector[winner_mask]
 
         n_obs = obstacle_points.shape[0]
