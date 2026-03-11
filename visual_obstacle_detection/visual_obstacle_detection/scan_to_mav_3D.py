@@ -5,8 +5,6 @@ from geometry_msgs.msg import Point
 from sensor_msgs.msg import PointCloud2
 from sensor_msgs_py import point_cloud2
 import numpy as np
-from geometry_msgs.msg import Point
-from std_msgs.msg import Header
 
 INCREMENT_ANGLE = 5.0 
 
@@ -21,13 +19,13 @@ class ObstaclesToMAVLink(Node):
         self.declare_parameter("MIN_DISTANCE", 0.2)
         self.declare_parameter("FREQUENCY", 10.0)
         
-        self.increment_angle = self.get_parameter("INCREMENT_ANGLE").value
-        self.max_distance = self.get_parameter("MAX_DISTANCE").value    
-        self.min_distance = self.get_parameter("MIN_DISTANCE").value    
+        self._increment = self.get_parameter("INCREMENT_ANGLE").value
+        self._max_distance = self.get_parameter("MAX_DISTANCE").value    
+        self._min_distance = self.get_parameter("MIN_DISTANCE").value    
         frequency = self.get_parameter("FREQUENCY").value  
         
-        self.n_bins = int(360 / self.increment_angle)
-        self.recent_cloud: np.ndarray | None = None
+        self._n_bins = int(360 / self._increment)
+        self._latest_cloud: np.ndarray | None = None
         
         self.create_subscription(
             PointCloud2,
@@ -36,27 +34,20 @@ class ObstaclesToMAVLink(Node):
             10,
         )
         
-        self.pub_3d = self.create_publisher(
+        self._pub_3d = self.create_publisher(
             ObstacleDistance3D,
             "/mavros/obstacle_distance_3d/send",
             10,
         )
         
-        self.pub_2d = self.create_publisher(
+        self._pub_2d = self.create_publisher(
             ObstacleDistance,
-            "/mavros/obstacle_distance/send",
+            "/obstacle_distance_2d",
             10,
         )
         
         self.create_timer(1.0 / frequency, self._publish)
 
-        self.get_logger().info(
-            f"obstacles_to_mavlink started  "
-            f"[{self._n_bins} bins × {self._increment}°, "
-            f"dist {self._min_distance}–{self._max_distance} m, "
-            f"{frequency} Hz]"
-        )
-        
         self.get_logger().info(
             f"obstacles_to_mavlink started  "
             f"[{self._n_bins} bins × {self._increment}°, "
@@ -82,46 +73,33 @@ class ObstaclesToMAVLink(Node):
         
         
     def _publish(self) -> None:
-        if self.recent_cloud is None or self.recent_cloud.shape[0] == 0:
-            self._publish_in_2d()
-            return
-        
-        cloud = self.recent_cloud
         now = self.get_clock().now().to_msg()
+        cloud = self._latest_cloud
         
-        for row in cloud:
-            x,y,z, raw_rgb = float(row[0]), float(row[1]), float(row[2]), int(row[3])
-            obstacle_id = int(np.frombuffer(np.float32(rgb_raw).tobytes(), dtype=np.uint32)[0])
+        if cloud is not None and cloud.shape[0] > 0:
+            for row in cloud:
+                x, y, z, raw_rgb = float(row[0]), float(row[1]), float(row[2]), int(row[3])
+                obstacle_id = int(np.frombuffer(np.float32(raw_rgb).tobytes(), dtype=np.uint32)[0])
+                
+                msg3D = ObstacleDistance3D()
+                msg3D.header.stamp = now    
+                msg3D.header.frame_id = "base_link"
+                msg3D.sensor_type = 1
+                msg3D.frame = 0
+                msg3D.obstacle_id = obstacle_id
+                msg3D.position = Point(x=x, y=y, z=z)
+                msg3D.min_distance = self._min_distance
+                msg3D.max_distance = self._max_distance
+                self._pub_3d.publish(msg3D)
             
-            msg3D = ObstacleDistance3D()
-            msg3D.header.stamp = now    
-            msg3D.header.frame_id = "base_link"
-            msg3D.sensor_type = 1
-            msg3D.frame = 0
-            msg3D.obstacle_id = obstacle_id
-            msg3D.position = Point(x=x, y=y, z=z)
-            msg3D.min_distance = self.min_distance
-            msg3D.max_distance = self.max_distance
-            self.pub_3d.publish(msg3D)
-            
-        self._publish_obstacle_distance(cloud, now)
-        self.get_logger().debug(
-            f"Published {cloud.shape[0]} ObstacleDistance3D + 1 ObstacleDistance"
+            self.get_logger().debug(
+                f"Published {cloud.shape[0]} ObstacleDistance3D + 1 ObstacleDistance"
+            )
+        
+        self._publish_obstacle_distance(
+            cloud if cloud is not None else np.empty((0, 4), dtype=np.float32),
+            now,
         )
-        
-    def _publish_in_2d(self) -> None:
-        msg = ObstacleDistance()
-        msg.header.stamp    = self.get_clock().now().to_msg()
-        msg.header.frame_id = "base_link"
-        msg.sensor_type     = 0
-        msg.frame           = 12        
-        msg.increment       = self._increment
-        msg.min_distance    = int(self._min_distance * 100)   # cm
-        msg.max_distance    = int(self._max_distance * 100)   # cm
-        msg.increment_f     = float(self._increment)
-        msg.angle_offset    = 0.0
-        msg.distances       = [int(self._max_distance * 100)] * self._n_bins
-        self._pub_2d.publish(msg)
             
     def _publish_obstacle_distance(self, cloud: np.ndarray, stamp) -> None:
         xy = cloud[:, :2]   
