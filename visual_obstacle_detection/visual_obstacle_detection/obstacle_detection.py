@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import struct
 import numpy as np
 
 import rclpy
@@ -173,8 +172,7 @@ class ObstacleDetection(Node):
             f"from {self.cloud.shape[0]} total points"
         )
 
-        # pack as XYZ + id (int32) for coloring in RViz; the id is derived from the sector index
-        colored_points = [
+        obstacle_points_with_ids = [
             [p[0], p[1], p[2], int(s)] for p, s in zip(obstacle_points, obstacle_sectors)
             ]
 
@@ -202,14 +200,14 @@ class ObstacleDetection(Node):
                 count=1,
             ),
             PointField(
-                name='rgb',
+                name='obstacle_id',
                 offset=12,
                 datatype=PointField.UINT32,
                 count=1,
             ),
         ]
 
-        cloud_msg = pc2.create_cloud(header, fields, colored_points)
+        cloud_msg = pc2.create_cloud(header, fields, obstacle_points_with_ids)
         self.pub.publish(cloud_msg)
 
 

@@ -4,7 +4,6 @@ from mavros_msgs.msg import ObstacleDistance3D  # , ObstacleDistance
 from geometry_msgs.msg import Point
 from sensor_msgs.msg import PointCloud2
 from sensor_msgs_py import point_cloud2
-import numpy as np
 
 # INCREMENT_ANGLE = 5.0 
 
@@ -25,7 +24,7 @@ class ObstaclesToMAVLink(Node):
         frequency = self.get_parameter("FREQUENCY").value  
         
         # self._n_bins = int(360 / self._increment)
-        self._latest_cloud: np.ndarray | None = None
+        self._latest_cloud: list[tuple[float, float, float, int]] | None = None
         
         self.create_subscription(
             PointCloud2,
@@ -57,29 +56,26 @@ class ObstaclesToMAVLink(Node):
     def _cb_obstacles(self, msg: PointCloud2) -> None:
         pts = list(point_cloud2.read_points(
             msg,
-            field_names=("x", "y", "z", "rgb"),
+            field_names=("x", "y", "z", "obstacle_id"),
             skip_nans=True,
         ))
         if not pts:
             self._latest_cloud = None
             return
 
-        arr = np.array(
-            [(p[0], p[1], p[2], p[3]) for p in pts],
-            dtype=np.float32,
-        )
-        self._latest_cloud = arr
+        self._latest_cloud = [
+            (float(point[0]), float(point[1]), float(point[2]), int(point[3]))
+            for point in pts
+        ]
         
         
     def _publish(self) -> None:
         now = self.get_clock().now().to_msg()
         cloud = self._latest_cloud
         
-        if cloud is not None and cloud.shape[0] > 0:
-            for row in cloud:
-                x, y, z, raw_rgb = float(row[0]), float(row[1]), float(row[2]), int(row[3])
-                raw_rgb_uint32 = np.frombuffer(np.float32(raw_rgb).tobytes(), dtype=np.uint32)[0]
-                obstacle_id = int(raw_rgb_uint32 % 65536)   # wrap into 0-65535
+        if cloud is not None and len(cloud) > 0:
+            for x, y, z, obstacle_id in cloud:
+                obstacle_id = int(obstacle_id % 65536)
                 
                 msg3D = ObstacleDistance3D()
                 msg3D.header.stamp = now    
@@ -93,7 +89,7 @@ class ObstaclesToMAVLink(Node):
                 self._pub_3d.publish(msg3D)
             
             self.get_logger().debug(
-                f"Published {cloud.shape[0]} ObstacleDistance3D"
+                f"Published {len(cloud)} ObstacleDistance3D"
             )
         
         # self._publish_obstacle_distance(
