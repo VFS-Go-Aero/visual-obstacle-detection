@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- Removed deprecated `scan_to_mavlink` package and all associated files (`scan_to_mavlink_node.py`, `setup.py`, `setup.cfg`, `package.xml`, tests, and resource).
+- Removed deprecated test scripts `scripts/fakedata.py` (fake obstacle publisher) and `scripts/testmav.py` (MAVLink test).
+- Removed `scan_to_mavlink` test step from the CI workflow (`.github/workflows/ros2_ci.yml`).
+
 ## [0.8.0] - 2026-03-11
 
 ### Added
