@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-03-11
+
 ### Added
 
 - New `obstacle_to_mavlink` module (`obstacle_to_mavlink.py`) with an `ObstacleToMavlink` node that subscribes to the obstacle point cloud on `/merged_cloud/obstacles`, reads obstacle points with `obstacle_id` fields, and publishes each obstacle as an `ObstacleDistance3D` message to `/mavros/obstacle_distance_3d/send` at a configurable frequency with configurable distance parameters (`MAX_DISTANCE`, `MIN_DISTANCE`, `FREQUENCY`).
@@ -192,7 +194,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated ZED2 transform parameters to zero.
 - Updated static transform publisher arguments for clarity.
 
-[Unreleased]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.4.4...v0.5.0
