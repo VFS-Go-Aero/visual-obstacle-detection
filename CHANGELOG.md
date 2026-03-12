@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-03-11
+
 ### Removed
 
 - Removed deprecated `scan_to_mavlink` package and all associated files (`scan_to_mavlink_node.py`, `setup.py`, `setup.cfg`, `package.xml`, tests, and resource).
