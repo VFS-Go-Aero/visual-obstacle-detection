@@ -24,6 +24,9 @@ line-length = 120
 [tool.mypy]
 ignore_missing_imports = true
 
+[tool.setuptools]
+py-modules = ["obstacle_detection"]
+
 [build-system]
 requires = ["setuptools>=78.1.1"]  # Security: Path traversal vulnerability fix
 build-backend = "setuptools.build_meta"
