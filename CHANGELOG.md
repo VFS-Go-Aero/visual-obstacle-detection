@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-03-11
+
+### Added
+
+- New `obstacle_to_mavlink` module (`obstacle_to_mavlink.py`) with an `ObstacleToMavlink` node that subscribes to the obstacle point cloud on `/merged_cloud/obstacles`, reads obstacle points with `obstacle_id` fields, and publishes each obstacle as an `ObstacleDistance3D` message to `/mavros/obstacle_distance_3d/send` at a configurable frequency with configurable distance parameters (`MAX_DISTANCE`, `MIN_DISTANCE`, `FREQUENCY`).
+- `obstacle_to_mavlink` console script entry point in `setup.py`.
+- `frame_id` (`zed1_left_camera_frame`) set on the obstacle cloud header in `obstacle_detection.py`, required for visualization in RViz.
+
+### Changed
+
+- `build_sector_map()` now returns a `(winner_mask, winner_sector)` tuple, providing the sector ID for each obstacle representative point in `obstacle_detection.py`.
+- Reduced sector-map resolution from 32×16 to 8×8 azimuth/elevation bins in `obstacle_detection.py`.
+- Obstacle cloud `PointField` renamed from `rgb` to `obstacle_id`, now carrying an integer sector ID instead of a packed red RGB value in `obstacle_detection.py`.
+- Sector-map obstacle count log level changed from `debug` to `info` in `obstacle_detection.py`.
+
+### Removed
+
+- Removed `obstacle_detection_pc` module (`obstacle_detection_pc.py`) and its `obstacle_detection_pc` console script entry point from `setup.py`.
+
+### Fixed
+
+- Removed extra blank line in `scan_to_mavlink_node.py`.
+
 ## [0.7.0] - 2026-03-04
 
 ### Added
@@ -171,7 +194,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated ZED2 transform parameters to zero.
 - Updated static transform publisher arguments for clarity.
 
-[Unreleased]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.4.4...v0.5.0

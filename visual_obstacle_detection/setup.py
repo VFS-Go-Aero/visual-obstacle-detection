@@ -4,7 +4,7 @@ package_name = "visual_obstacle_detection"
 
 setup(
     name=package_name,
-    version="0.7.0",
+    version="0.8.0",
     packages=[package_name],
     data_files=[
         ("share/ament_index/resource_index/packages", ["resource/" + package_name]),
@@ -22,7 +22,7 @@ setup(
         "console_scripts": [
             "point_cloud = visual_obstacle_detection.point_cloud:main",
             "obstacle_detection = visual_obstacle_detection.obstacle_detection:main",
-            "obstacle_detection_pc = visual_obstacle_detection.obstacle_detection_pc:main",
+            "obstacle_to_mavlink = visual_obstacle_detection.obstacle_to_mavlink:main",
         ],
     },
     url="https://github.com/VFS-Go-Aero/visual-obstacle-detection",

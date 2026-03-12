@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import struct
 import numpy as np
 
 import rclpy
@@ -12,8 +11,8 @@ from std_msgs.msg import Header
 
 
 # ── sector-map config ─────────────────────────────────────────────────────────
-N_AZ = 32     # azimuth bins   (360 / 32 = 11.25° each)
-N_EL = 16     # elevation bins (180 / 16 = 11.25° each)
+N_AZ = 8     # azimuth bins   (360 / 8 = 45° each)
+N_EL = 8     # elevation bins (180 / 8 = 45° each)
 DIST_BIN_W = 0.5    # distance shell width (metres)
 MIN_POINTS = 3      # min points in a shell to count as a real obstacle
 # ─────────────────────────────────────────────────────────────────────────────
@@ -38,7 +37,7 @@ def build_sector_map(points: np.ndarray,
 
     """
     if points.shape[0] == 0:
-        return np.zeros(0, dtype=bool)
+        return np.zeros(0, dtype=bool), np.zeros(0, dtype=np.uint32)
 
     # drop NaN and zero-distance points
     finite_mask = np.isfinite(points).all(axis=1)
@@ -46,7 +45,7 @@ def build_sector_map(points: np.ndarray,
     valid = finite_mask & (dists > 0)
 
     if not np.any(valid):
-        return np.zeros(len(points), dtype=bool)
+        return np.zeros(len(points), dtype=bool), np.zeros(len(points), dtype=np.uint32)
 
     dirs = np.zeros_like(points)
     dirs[valid] = points[valid] / dists[valid, np.newaxis]
@@ -58,6 +57,7 @@ def build_sector_map(points: np.ndarray,
     el_idx = ((el + np.pi / 2) / np.pi * n_el).astype(int).clip(0, n_el - 1)
 
     winner_mask = np.zeros(len(points), dtype=bool)
+    winner_sector = np.zeros(len(points), dtype=np.uint32)
 
     for a in range(n_az):
         for e in range(n_el):
@@ -81,16 +81,19 @@ def build_sector_map(points: np.ndarray,
                     pts_in_bin = sector_indices[in_bin]
                     closest = pts_in_bin[np.argmin(sector_dists[in_bin])]
                     winner_mask[closest] = True
+                    sector_id = a * n_el + e
+                    winner_sector[closest] = sector_id
                     break
             # no bin reached threshold → sector is clear, no winner
 
-    return winner_mask
+    return winner_mask, winner_sector
 
 
 class ObstacleDetection(Node):
 
     def __init__(self) -> None:
         super().__init__("obstacle_detection_segment")
+        self._frame_id = "zed1_left_camera_frame"
 
         self._cloud1 = np.empty((0, 3), dtype=np.float32)
         self._cloud2 = np.empty((0, 3), dtype=np.float32)
@@ -157,30 +160,25 @@ class ObstacleDetection(Node):
         if self.cloud.shape[0] == 0:
             return
 
-        winner_mask = build_sector_map(self.cloud)
+        winner_mask, winner_sector = build_sector_map(self.cloud)
 
         obstacle_points = self.cloud[winner_mask]
+        obstacle_sectors = winner_sector[winner_mask]
+
         n_obs = obstacle_points.shape[0]
 
-        self.get_logger().debug(
+        self.get_logger().info(
             f"Sector map: {n_obs} obstacle representatives "
             f"from {self.cloud.shape[0]} total points"
         )
 
-        # pack as XYZ + RGB (red)
-        # BGR order for PCL-compatible RGB field
-        red_packed = struct.unpack(
-            'I',
-            struct.pack('BBBB', 0, 0, 255, 0),
-        )[0]
-        colored_points = [
-            [p[0], p[1], p[2], red_packed]
-            for p in obstacle_points
-        ]
+        obstacle_points_with_ids = [
+            [p[0], p[1], p[2], int(s)] for p, s in zip(obstacle_points, obstacle_sectors)
+            ]
 
         header = Header()
         header.stamp = self.get_clock().now().to_msg()
-        # Do not hard-code a frame_id here; the points are not transformed into 'map'.
+        header.frame_id = self._frame_id
 
         fields = [
             PointField(
@@ -202,14 +200,14 @@ class ObstacleDetection(Node):
                 count=1,
             ),
             PointField(
-                name='rgb',
+                name='obstacle_id',
                 offset=12,
                 datatype=PointField.UINT32,
                 count=1,
             ),
         ]
 
-        cloud_msg = pc2.create_cloud(header, fields, colored_points)
+        cloud_msg = pc2.create_cloud(header, fields, obstacle_points_with_ids)
         self.pub.publish(cloud_msg)
 
 
