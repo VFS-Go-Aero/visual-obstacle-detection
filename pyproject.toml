@@ -1,0 +1,32 @@
+[project]
+name = "obstacle-detection"
+version = "0.1.0"
+description = "Obstacle detection using ZED camera and point cloud clustering"
+requires-python = ">=3.9"  # setuptools >=78.1.1 (security fix) requires Python 3.9+
+dependencies = [
+    "numpy",
+    "open3d",
+    "setuptools>=78.1.1",  # Security: Path traversal vulnerability fix in PackageIndex.download
+]
+
+[dependency-groups]
+dev = [
+    "ruff",
+    "mypy",
+]
+
+[project.scripts]
+obstacle-detection = "obstacle_detection:main"
+
+[tool.ruff]
+line-length = 120
+
+[tool.mypy]
+ignore_missing_imports = true
+
+[tool.setuptools]
+py-modules = ["obstacle_detection"]
+
+[build-system]
+requires = ["setuptools>=78.1.1"]  # Security: Path traversal vulnerability fix
+build-backend = "setuptools.build_meta"
