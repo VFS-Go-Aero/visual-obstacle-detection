@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Refactored `launch_files` package layout for Python/ROS 2 ament packaging, relocating launch scripts under `launch_files/launch` and updating package metadata.
+
 ## [0.8.1] - 2026-03-11
 
 ### Removed
