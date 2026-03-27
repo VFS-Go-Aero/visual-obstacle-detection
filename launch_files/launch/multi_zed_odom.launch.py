@@ -67,7 +67,8 @@ def generate_launch_description():
         arguments=[
             *tuple(transformations["odom_to_zed1"]["position:"]),  # x y z (meters) from odom to zed1
             *tuple(
-                transformations["odom_to_zed1"]["orientation"] * math.pi / 180
+                transformations["odom_to_zed1"]["orientation"]
+                * math.pi / 180
             ),  # roll pitch yaw (radians)
             "odom",
             "zed1_camera_link",
@@ -81,7 +82,8 @@ def generate_launch_description():
         arguments=[
             *tuple(transformations["odom_to_zed2"]["position:"]),  # x y z (meters) from odom to zed2
             *tuple(
-                transformations["odom_to_zed2"]["orientation"] * math.pi / 180
+                transformations["odom_to_zed2"]["orientation"]
+                * math.pi / 180
             ),  # roll pitch yaw (radians)
             "odom",
             "zed2_camera_link",
