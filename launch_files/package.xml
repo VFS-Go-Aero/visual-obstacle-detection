@@ -4,14 +4,23 @@
   <name>launch_files</name>
   <version>0.8.1</version>
   <description>Holds relevant launch files for the visual obstacle detection system</description>
+  <url type="repository">https://github.com/VFS-Go-Aero/visual-obstacle-detection</url>
   <maintainer email="vfspurd@purdue.edu">Vertical Flight Systems Purdue</maintainer>
   <url type="website">https://vfspurdue.com</url>
   <license>MIT</license>
 
-  <!-- launch-time dependencies for Python-based launch descriptions -->
-  <depend>ament_index_python</depend>
+  <depend>rclpy</depend>
+  <depend>std_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>geometry_msgs</depend>
   <depend>launch</depend>
   <depend>launch_ros</depend>
+  <exec_depend>python3-numpy</exec_depend>
+
+  <test_depend>ament_copyright</test_depend>
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
+  <test_depend>python3-pytest</test_depend>
 
   <author email="chand289@purdue.edu">Advay Chandra</author>
   <author email="gfellows@purdue.edu">Grant Fellows</author>
