@@ -13,12 +13,12 @@ from launch_ros.actions import Node
 
 transformations = {
     "odom_to_zed1": {
-        "position:": np.array([0.0, 0.0, 0.0]),  # x y z in meters
-        "orientation": np.array([0.0, 0.0, 0.0]),  # roll pitch yaw in degrees
+        "position": np.array([0.0, 0.0, 0.0]),  # x y z (m) from odom to zed1
+        "orientation": np.array([0.0, 0.0, 0.0]),  # roll pitch yaw (deg)
     },
     "odom_to_zed2": {
-        "position:": np.array([0.0, -0.31, 0.0]),  # x y z in meters
-        "orientation": np.array([0.0, 0.0, 0.0]),  # roll pitch yaw in degrees
+        "position": np.array([0.0, -0.31, 0.0]),  # x y z (m) from odom to zed2
+        "orientation": np.array([0.0, 0.0, 0.0]),  # roll pitch yaw in (deg)
     },
 }
 
@@ -65,11 +65,11 @@ def generate_launch_description():
         executable="static_transform_publisher",
         name="zed1_offset_tf",
         arguments=[
-            *tuple(transformations["odom_to_zed1"]["position:"]),  # x y z (meters) from odom to zed1
+            *tuple(transformations["odom_to_zed1"]["position"]),  # x y z (m) from odom to zed1
             *tuple(
                 transformations["odom_to_zed1"]["orientation"]
                 * math.pi / 180
-            ),  # roll pitch yaw (radians)
+            ),  # roll pitch yaw (rad)
             "odom",
             "zed1_camera_link",
         ],
@@ -80,11 +80,11 @@ def generate_launch_description():
         executable="static_transform_publisher",
         name="zed2_offset_tf",
         arguments=[
-            *tuple(transformations["odom_to_zed2"]["position:"]),  # x y z (meters) from odom to zed2
+            *tuple(transformations["odom_to_zed2"]["position"]),  # x y z (m) from odom to zed2
             *tuple(
                 transformations["odom_to_zed2"]["orientation"]
                 * math.pi / 180
-            ),  # roll pitch yaw (radians)
+            ),  # roll pitch yaw (rad)
             "odom",
             "zed2_camera_link",
         ],
