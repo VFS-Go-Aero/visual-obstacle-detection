@@ -3,6 +3,7 @@ from rclpy.node import Node
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import PoseStamped
 
+
 class DronePose(Node):
     def __init__(self):
         super().__init__('drone_pose')
@@ -19,6 +20,7 @@ class DronePose(Node):
         pose_msg.header = msg.header
         pose_msg.pose = msg.pose.pose
         self.pose_publisher.publish(pose_msg)
+
 
 def main(args=None):
     rclpy.init(args=args)

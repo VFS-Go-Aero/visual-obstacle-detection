@@ -22,6 +22,7 @@ transformations = {
     },
 }
 
+
 def generate_launch_description():
     """Build a launch description for dual ZED X cameras with static TF."""
     zed_launch = os.path.join(
@@ -31,7 +32,7 @@ def generate_launch_description():
     )
 
     # -----------------------------------------------
-    # Camera 1 — no odom/map TF 
+    # Camera 1 — no odom/map TF
     # -----------------------------------------------
     cam1 = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(zed_launch),
@@ -65,7 +66,9 @@ def generate_launch_description():
         name="zed1_offset_tf",
         arguments=[
             *tuple(transformations["odom_to_zed1"]["position:"]),  # x y z (meters) from odom to zed1
-            *tuple(transformations["odom_to_zed1"]["orientation"] * math.pi / 180),  # roll pitch yaw (radians)
+            *tuple(
+                transformations["odom_to_zed1"]["orientation"] * math.pi / 180
+            ),  # roll pitch yaw (radians)
             "odom",
             "zed1_camera_link",
         ],
@@ -77,7 +80,9 @@ def generate_launch_description():
         name="zed2_offset_tf",
         arguments=[
             *tuple(transformations["odom_to_zed2"]["position:"]),  # x y z (meters) from odom to zed2
-            *tuple(transformations["odom_to_zed2"]["orientation"] * math.pi / 180),  # roll pitch yaw (radians)
+            *tuple(
+                transformations["odom_to_zed2"]["orientation"] * math.pi / 180
+            ),  # roll pitch yaw (radians)
             "odom",
             "zed2_camera_link",
         ],
