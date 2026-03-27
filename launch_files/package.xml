@@ -8,9 +8,16 @@
   <url type="website">https://vfspurdue.com</url>
   <license>MIT</license>
 
+  <!-- launch-time dependencies for Python-based launch descriptions -->
+  <depend>ament_index_python</depend>
+  <depend>launch</depend>
+  <depend>launch_ros</depend>
 
   <author email="chand289@purdue.edu">Advay Chandra</author>
   <author email="gfellows@purdue.edu">Grant Fellows</author>
   <author email="swadi@purdue.edu">Arin Swadi</author>
 
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
 </package>
