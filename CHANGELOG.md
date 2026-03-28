@@ -7,9 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added new `launch_files/launch/multi_zed_odom.launch.py` to launch two ZED X cameras with odom-based static transforms and drone pose publisher.
+- Added `launch_files/launch_files/drone_pose.py` node publishing `/drone_pose` from `/mavros/local_position/odom`.
+- Added additional unit tests and linting checks in `launch_files` package: `test_flake8`, `test_pep257`, and `test_copyright` coverage.
+
 ### Changed
 
 - Refactored `launch_files` package layout for Python/ROS 2 ament packaging, relocating launch scripts under `launch_files/launch` and updating package metadata.
+
+### Fixed
+
+- Fixed flake8 style issues in `multi_zed_odom.launch.py` and `drone_pose.py` (blank lines, line length, trailing whitespace, final newline).
 
 ## [0.8.1] - 2026-03-11
 

@@ -22,7 +22,7 @@ setup(
     tests_require=["pytest"],
     entry_points={
         "console_scripts": [
-            # no executables
+            "drone_pose = launch_files.drone_pose:main",
         ],
     },
     url="https://github.com/VFS-Go-Aero/visual-obstacle-detection",
