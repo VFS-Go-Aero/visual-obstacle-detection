@@ -93,10 +93,7 @@ class ObstacleDetection(Node):
 
     def __init__(self) -> None:
         super().__init__("obstacle_detection_segment")
-        self._frame_id = "zed1_left_camera_frame"
-
-        self._cloud1 = np.empty((0, 3), dtype=np.float32)
-        self._cloud2 = np.empty((0, 3), dtype=np.float32)
+        self._frame_id = "base_link"
         self.cloud = np.empty((0, 3), dtype=np.float32)
 
         # publish only the obstacle-representative points (red)
@@ -106,17 +103,10 @@ class ObstacleDetection(Node):
             10,
         )
 
-        self._sub_zed1 = self.create_subscription(
+        self._sub_merged = self.create_subscription(
             PointCloud2,
-            "/zed1/zed_node/point_cloud/cloud_registered",
-            self._cb_zed1,
-            10,
-        )
-
-        self._sub_zed2 = self.create_subscription(
-            PointCloud2,
-            "/zed2/zed_node/point_cloud/cloud_registered",
-            self._cb_zed2,
+            "/merged_cloud",
+            self._cb_merged,
             10,
         )
 
@@ -137,21 +127,12 @@ class ObstacleDetection(Node):
             [structured["x"], structured["y"], structured["z"]]
         ).astype(np.float32)
 
-    # ── merging ───────────────────────────────────────────────────────────────
-
-    def _merge(self) -> None:
-        self.cloud = np.concatenate((self._cloud1, self._cloud2), axis=0)
-
     # ── callbacks ─────────────────────────────────────────────────────────────
 
-    def _cb_zed1(self, msg: PointCloud2) -> None:
-        self._cloud1 = self._parse(msg)
-        self._merge()
-        self._detect_and_publish()
-
-    def _cb_zed2(self, msg: PointCloud2) -> None:
-        self._cloud2 = self._parse(msg)
-        self._merge()
+    def _cb_merged(self, msg: PointCloud2) -> None:
+        if msg.header.frame_id:
+            self._frame_id = msg.header.frame_id
+        self.cloud = self._parse(msg)
         self._detect_and_publish()
 
     # ── detection + publish ───────────────────────────────────────────────────

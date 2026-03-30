@@ -12,10 +12,16 @@ Run:  python3 point_cloud.py  (with cameras already launched)
 
 import numpy as np
 import rclpy
+from rclpy.duration import Duration
 from rclpy.node import Node
+from rclpy.time import Time
 from sensor_msgs.msg import PointCloud2
 from sensor_msgs_py import point_cloud2
 import std_msgs.msg as std_msg
+from tf2_ros import TransformException
+from tf2_ros.buffer import Buffer
+from tf2_ros.transform_listener import TransformListener
+from tf2_sensor_msgs.tf2_sensor_msgs import do_transform_cloud
 
 
 class PointCloud(Node):
@@ -29,6 +35,16 @@ class PointCloud(Node):
 
     def __init__(self) -> None:
         super().__init__("point_cloud")
+
+        self.declare_parameter("target_frame", "base_link")
+        self.declare_parameter("tf_timeout_s", 0.05)
+
+        self._target_frame = str(self.get_parameter("target_frame").value)
+        self._tf_timeout = Duration(seconds=float(self.get_parameter("tf_timeout_s").value))
+        self._frame_id = self._target_frame
+
+        self._tf_buffer = Buffer()
+        self._tf_listener = TransformListener(self._tf_buffer, self)
 
         # Latest (N, 3) float32 array from each camera, starts empty.
         self._cloud1 = np.empty((0, 3), dtype=np.float32)
@@ -87,16 +103,37 @@ class PointCloud(Node):
         self.get_logger().info(f"merged cloud: {self.cloud.shape[0]} pts")
         header = std_msg.Header()
         header.stamp = self.get_clock().now().to_msg()
-        header.frame_id = "base_link"
+        header.frame_id = self._frame_id
         msg = point_cloud2.create_cloud_xyz32(header, self.cloud.tolist())
         self._merged_pub.publish(msg)
 
+    def _transform_cloud(self, msg: PointCloud2) -> np.ndarray:
+        """Transform a PointCloud2 into the configured target frame and parse xyz."""
+        if msg.header.frame_id == self._target_frame:
+            return self._parse(msg)
+
+        try:
+            tf_msg = self._tf_buffer.lookup_transform(
+                self._target_frame,
+                msg.header.frame_id,
+                Time.from_msg(msg.header.stamp),
+                timeout=self._tf_timeout,
+            )
+            transformed = do_transform_cloud(msg, tf_msg)
+        except TransformException as exc:
+            self.get_logger().warning(
+                f"TF unavailable {msg.header.frame_id}->{self._target_frame}: {exc}"
+            )
+            return np.empty((0, 3), dtype=np.float32)
+
+        return self._parse(transformed)
+
     def _cb_zed1(self, msg: PointCloud2) -> None:
-        self._cloud1 = self._parse(msg)
+        self._cloud1 = self._transform_cloud(msg)
         self._merge()
 
     def _cb_zed2(self, msg: PointCloud2) -> None:
-        self._cloud2 = self._parse(msg)
+        self._cloud2 = self._transform_cloud(msg)
         self._merge()
 
 
