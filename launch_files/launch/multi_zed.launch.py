@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Launch multi-camera ZED setup using the zed_multi_camera package."""
+"""Launch two ZED cameras with explicit static transforms from base_link."""
 
 import os
 
@@ -11,26 +11,34 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
-    """Build a launch description for multi-camera ZED setup."""
-    # Path to the multi-camera launch file
-    multi_camera_launch_file = os.path.join(
-        get_package_share_directory("zed_multi_camera"),
+    """Build a launch description for dual ZED setup with explicit TF ownership."""
+    zed_launch = os.path.join(
+        get_package_share_directory("zed_wrapper"),
         "launch",
-        "zed_multi_camera.launch.py"
+        "zed_camera.launch.py"
     )
 
-    # Include the multi-camera launch with your parameters
-    zed_multi_camera = IncludeLaunchDescription(
-        launch_description_source=PythonLaunchDescriptionSource(
-            multi_camera_launch_file
-        ),
+    zed1 = IncludeLaunchDescription(
+        launch_description_source=PythonLaunchDescriptionSource(zed_launch),
         launch_arguments={
-            "cam_names": "[zed1,zed2]",
-            "cam_models": "[zedx, zedx]",  # Adjust if different
-            "cam_serials": "[44659546,42203370]",
-            "cam_resolutions": "[HD720,HD720]",  # Lower res
-            "cam_framerates": "[15,15]",  # Lower framerate
-            "disable_tf": "true", # don't publish TF from cameras, we'll do it ourselves
+            "camera_name": "zed1",
+            "camera_model": "zedx",
+            "serial_number": "44659546",
+            "publish_tf": "false",
+            "publish_map_tf": "false",
+            "pub_frame_rate": "15.0",
+        }.items(),
+    )
+
+    zed2 = IncludeLaunchDescription(
+        launch_description_source=PythonLaunchDescriptionSource(zed_launch),
+        launch_arguments={
+            "camera_name": "zed2",
+            "camera_model": "zedx",
+            "serial_number": "42203370",
+            "publish_tf": "false",
+            "publish_map_tf": "false",
+            "pub_frame_rate": "15.0",
         }.items(),
     )
 
@@ -60,4 +68,4 @@ def generate_launch_description():
         ],
     )
 
-    return LaunchDescription([zed_multi_camera, base_to_zed1, base_to_zed2])
+    return LaunchDescription([zed1, zed2, base_to_zed1, base_to_zed2])
