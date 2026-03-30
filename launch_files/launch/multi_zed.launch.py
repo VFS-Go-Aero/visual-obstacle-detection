@@ -33,7 +33,7 @@ def generate_launch_description():
         }.items(),
     )
 
-    # Static extrinsics from drone body frame to each camera root frame.
+    # Static extrinsics from drone body frame to each camera optical source frame.
     # Update these values after camera calibration.
     base_to_zed1 = Node(
         package="tf2_ros",
@@ -43,7 +43,7 @@ def generate_launch_description():
             "0.0", "0.0", "0.0",
             "0.0", "0.0", "0.0",
             "base_link",
-            "zed1_camera_link",
+            "zed1_left_camera_frame",
         ],
     )
 
@@ -55,7 +55,7 @@ def generate_launch_description():
             "0.0", "-0.31", "0.0",
             "0.0", "0.0", "0.0",
             "base_link",
-            "zed2_camera_link",
+            "zed2_left_camera_frame",
         ],
     )
 
