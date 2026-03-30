@@ -38,9 +38,13 @@ class PointCloud(Node):
 
         self.declare_parameter("target_frame", "base_link")
         self.declare_parameter("tf_timeout_s", 0.05)
+        self.declare_parameter("cloud_topic_zed1", "/zed1/zed_node/point_cloud/cloud_registered")
+        self.declare_parameter("cloud_topic_zed2", "/zed2/zed_node/point_cloud/cloud_registered")
 
         self._target_frame = str(self.get_parameter("target_frame").value)
         self._tf_timeout = Duration(seconds=float(self.get_parameter("tf_timeout_s").value))
+        self._topic_zed1 = str(self.get_parameter("cloud_topic_zed1").value)
+        self._topic_zed2 = str(self.get_parameter("cloud_topic_zed2").value)
         self._frame_id = self._target_frame
 
         self._tf_buffer = Buffer()
@@ -62,13 +66,13 @@ class PointCloud(Node):
         # Explicit subscriptions — no loop, no dictionary.
         self._sub_zed1 = self.create_subscription(
             PointCloud2,
-            "/zed1/zed_node/point_cloud/cloud_registered",
+            self._topic_zed1,
             self._cb_zed1,
             10,
         )
         self._sub_zed2 = self.create_subscription(
             PointCloud2,
-            "/zed2/zed_node/point_cloud/cloud_registered",
+            self._topic_zed2,
             self._cb_zed2,
             10,
         )
@@ -76,7 +80,8 @@ class PointCloud(Node):
         self._merged_pub = self.create_publisher(PointCloud2, "/merged_cloud", 10)
 
         self.get_logger().info(
-            f"point_cloud started [target_frame={self._target_frame}, tf_timeout={self._tf_timeout.nanoseconds / 1e9:.3f}s]"
+            f"point_cloud started [target_frame={self._target_frame}, tf_timeout={self._tf_timeout.nanoseconds / 1e9:.3f}s, "
+            f"topic_zed1={self._topic_zed1}, topic_zed2={self._topic_zed2}]"
         )
 
     def _parse(self, msg: PointCloud2) -> np.ndarray:
@@ -156,7 +161,7 @@ class PointCloud(Node):
         """Periodic diagnostics to show whether inputs and TF are healthy."""
         if self._msgs_zed1 == 0 and self._msgs_zed2 == 0:
             self.get_logger().warning(
-                "Waiting for camera clouds on /zed1/.../cloud_registered and /zed2/.../cloud_registered"
+                f"Waiting for camera clouds on {self._topic_zed1} and {self._topic_zed2}"
             )
             return
 
