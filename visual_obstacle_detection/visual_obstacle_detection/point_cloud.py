@@ -131,7 +131,7 @@ class PointCloud(Node):
             tf_msg = self._tf_buffer.lookup_transform(
                 self._target_frame,
                 msg.header.frame_id,
-                Time.from_msg(msg.header.stamp),
+                Time(),
                 timeout=self._tf_timeout,
             )
             transformed = do_transform_cloud(msg, tf_msg)
