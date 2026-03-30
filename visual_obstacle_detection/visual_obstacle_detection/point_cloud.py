@@ -38,8 +38,8 @@ class PointCloud(Node):
 
         self.declare_parameter("target_frame", "base_link")
         self.declare_parameter("tf_timeout_s", 0.05)
-        self.declare_parameter("cloud_topic_zed1", "/zed_multi/zed1/point_cloud/cloud_registered")
-        self.declare_parameter("cloud_topic_zed2", "/zed_multi/zed2/point_cloud/cloud_registered")
+        self.declare_parameter("cloud_topic_zed1", "/zed1/zed_node/point_cloud/cloud_registered")
+        self.declare_parameter("cloud_topic_zed2", "/zed2/zed_node/point_cloud/cloud_registered")
 
         self._target_frame = str(self.get_parameter("target_frame").value)
         self._tf_timeout = Duration(seconds=float(self.get_parameter("tf_timeout_s").value))
