@@ -46,6 +46,12 @@ class PointCloud(Node):
         self._tf_buffer = Buffer()
         self._tf_listener = TransformListener(self._tf_buffer, self)
 
+        self._msgs_zed1 = 0
+        self._msgs_zed2 = 0
+        self._tf_fail_zed1 = 0
+        self._tf_fail_zed2 = 0
+        self._status_timer = self.create_timer(2.0, self._status_tick)
+
         # Latest (N, 3) float32 array from each camera, starts empty.
         self._cloud1 = np.empty((0, 3), dtype=np.float32)
         self._cloud2 = np.empty((0, 3), dtype=np.float32)
@@ -68,6 +74,10 @@ class PointCloud(Node):
         )
 
         self._merged_pub = self.create_publisher(PointCloud2, "/merged_cloud", 10)
+
+        self.get_logger().info(
+            f"point_cloud started [target_frame={self._target_frame}, tf_timeout={self._tf_timeout.nanoseconds / 1e9:.3f}s]"
+        )
 
     def _parse(self, msg: PointCloud2) -> np.ndarray:
         """
@@ -121,6 +131,10 @@ class PointCloud(Node):
             )
             transformed = do_transform_cloud(msg, tf_msg)
         except TransformException as exc:
+            if "zed1" in msg.header.frame_id:
+                self._tf_fail_zed1 += 1
+            elif "zed2" in msg.header.frame_id:
+                self._tf_fail_zed2 += 1
             self.get_logger().warning(
                 f"TF unavailable {msg.header.frame_id}->{self._target_frame}: {exc}"
             )
@@ -129,12 +143,28 @@ class PointCloud(Node):
         return self._parse(transformed)
 
     def _cb_zed1(self, msg: PointCloud2) -> None:
+        self._msgs_zed1 += 1
         self._cloud1 = self._transform_cloud(msg)
         self._merge()
 
     def _cb_zed2(self, msg: PointCloud2) -> None:
+        self._msgs_zed2 += 1
         self._cloud2 = self._transform_cloud(msg)
         self._merge()
+
+    def _status_tick(self) -> None:
+        """Periodic diagnostics to show whether inputs and TF are healthy."""
+        if self._msgs_zed1 == 0 and self._msgs_zed2 == 0:
+            self.get_logger().warning(
+                "Waiting for camera clouds on /zed1/.../cloud_registered and /zed2/.../cloud_registered"
+            )
+            return
+
+        self.get_logger().info(
+            f"status: zed1_msgs={self._msgs_zed1}, zed2_msgs={self._msgs_zed2}, "
+            f"tf_fail_zed1={self._tf_fail_zed1}, tf_fail_zed2={self._tf_fail_zed2}, "
+            f"merged_pts={self.cloud.shape[0]}"
+        )
 
 
 def main() -> None:
