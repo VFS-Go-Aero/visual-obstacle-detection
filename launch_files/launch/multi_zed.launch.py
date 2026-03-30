@@ -30,6 +30,7 @@ def generate_launch_description():
             "cam_serials": "[44659546,42203370]",
             "cam_resolutions": "[HD720,HD720]",  # Lower res
             "cam_framerates": "[15,15]",  # Lower framerate
+            "disable_tf": "true", # don't publish TF from cameras, we'll do it ourselves
         }.items(),
     )
 
