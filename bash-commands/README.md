@@ -61,7 +61,7 @@ then, do add > by topic > /zed1/point_cloud/cloud_registered/PointCloud2
 
 **Build Package:**
 ```bash
-colcon build --packages-select scan_to_mavlink
+colcon build --packages-select visual_obstacle_detection
 colcon build --packages-select launch_files
 ```
 
