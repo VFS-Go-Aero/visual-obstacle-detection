@@ -79,9 +79,13 @@ class PointCloud(Node):
 
         self._merged_pub = self.create_publisher(PointCloud2, "/merged_cloud", 10)
 
+        tf_timeout_s = self._tf_timeout.nanoseconds / 1e9
         self.get_logger().info(
-            f"point_cloud started [target_frame={self._target_frame}, tf_timeout={self._tf_timeout.nanoseconds / 1e9:.3f}s, "
-            f"topic_zed1={self._topic_zed1}, topic_zed2={self._topic_zed2}]"
+            "point_cloud started "
+            f"[target_frame={self._target_frame}, "
+            f"tf_timeout={tf_timeout_s:.3f}s, "
+            f"topic_zed1={self._topic_zed1}, "
+            f"topic_zed2={self._topic_zed2}]"
         )
 
     def _parse(self, msg: PointCloud2) -> np.ndarray:
