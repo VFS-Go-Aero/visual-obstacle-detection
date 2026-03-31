@@ -9,17 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Added new `launch_files/launch/multi_zed_odom.launch.py` to launch two ZED X cameras with odom-based static transforms and drone pose publisher.
 - Added `launch_files/launch_files/drone_pose.py` node publishing `/drone_pose` from `/mavros/local_position/odom`.
 - Added additional unit tests and linting checks in `launch_files` package: `test_flake8`, `test_pep257`, and `test_copyright` coverage.
 
 ### Changed
 
 - Refactored `launch_files` package layout for Python/ROS 2 ament packaging, relocating launch scripts under `launch_files/launch` and updating package metadata.
+- Reworked `launch_files/launch/multi_zed.launch.py` to launch two explicit `zed_wrapper` camera instances (`zed1`, `zed2`) with TF publishing disabled, and to define static extrinsics from `base_link` to each camera link in the launch file.
+- Updated `visual_obstacle_detection/point_cloud.py` to default to direct `zed_wrapper` point cloud topics (`/zed1/zed_node/point_cloud/cloud_registered`, `/zed2/zed_node/point_cloud/cloud_registered`) and maintain merged-cloud publication in the configured target frame.
+- Updated obstacle detection flow to consume `/merged_cloud` directly and preserve incoming frame IDs when publishing `/merged_cloud/obstacles`.
 
 ### Fixed
 
-- Fixed flake8 style issues in `multi_zed_odom.launch.py` and `drone_pose.py` (blank lines, line length, trailing whitespace, final newline).
+- Fixed flake8 style issues in `drone_pose.py` (blank lines, line length, trailing whitespace, final newline).
+- Fixed `launch_files` packaging to install only launch Python files (`launch/*.py`), avoiding build failures from `launch/__pycache__` paths.
+- Improved merge-node TF robustness by using latest available transform lookup for point cloud conversion, reducing timestamp extrapolation failures during live operation.
+
+### Removed
+
+- Removed legacy launch files `launch_files/launch/multi_zed_odom.launch.py` and `launch_files/launch/multi_zed_tf.launch.py` to keep `launch_files/launch/multi_zed.launch.py` as the single supported dual-camera launch entry point.
 
 ## [0.8.1] - 2026-03-11
 

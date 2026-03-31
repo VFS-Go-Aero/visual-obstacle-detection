@@ -15,7 +15,8 @@ ros2 topic pub /mavros/rangefinder_sub sensor_msgs/Range "{
 
 ## Source
 ```bash
-source ../install/local_setup.bash
+source /opt/ros/humble/setup.bash
+source ~/ros2_ws/install/local_setup.bash
 ```
 
 ## LaserScan
@@ -49,7 +50,7 @@ ros2 launch zed_wrapper zed_camera.launch.py camera_model:=zedx
 
 **Launch Dual Cameras**
 ```bash
-ros2 launch launch_files multi_zed_tf.launch.py
+ros2 launch launch_files multi_zed.launch.py
 ```
 
 **Run Pointcloud Viz**
