@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>visual_obstacle_detection</name>
-  <version>0.8.1</version>
+  <version>0.9.0</version>
   <description>Visual Obstacle Detection package</description>
   <url type="repository">https://github.com/VFS-Go-Aero/visual-obstacle-detection</url>
   <maintainer email="vfspurd@purdue.edu">Vertical Flight Systems Purdue</maintainer>
@@ -13,6 +13,8 @@
   <depend>std_msgs</depend>
   <depend>sensor_msgs</depend>
   <depend>sensor_msgs_py</depend>
+  <depend>tf2_ros</depend>
+  <depend>tf2_sensor_msgs</depend>
   <exec_depend>python3-numpy</exec_depend>
 
   <test_depend>ament_copyright</test_depend>

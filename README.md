@@ -9,16 +9,15 @@ Visual Obstacle Detection is a project designed to detect obstacles using visual
 - Point cloud processing and merging from dual ZED X cameras
 - Sector-map-based obstacle detection dividing the point cloud into azimuth/elevation bins
 - Distance/bounding-box obstacle filtering with RGB coloring and 3×3 region `MarkerArray` visualization
-- MAVLink obstacle-distance message conversion via `scan_to_mavlink`
-- ROS 2 (Humble) integration with multiple `ament_python` packages
+- `launch_files` ROS 2 launch package for multi-camera ZED setup and pose transforms
+- ROS 2 (Humble) integration with `ament_python` packages
 
 ## Repository Structure
 - `visual_obstacle_detection/`: Core ROS 2 package for obstacle detection
   - `point_cloud.py` — Point cloud subscriber and merger
   - `obstacle_detection.py` — Sector-map-based obstacle detection node
   - `obstacle_detection_pc.py` — Distance/bounding-box obstacle filtering with `MarkerArray` visualization
-- `scan_to_mavlink/`: Converts LaserScan data to MAVLink obstacle-distance messages
-- `launch_files/`: ROS 2 launch files for multi-camera ZED setup
+- `launch_files/`: ROS 2 launch package for multi-camera ZED setup and drone pose publisher
 - `scripts/`: Utility scripts for testing and data generation
 - `bash-commands/`: Common ROS 2 CLI commands reference
 

@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-03-31
+
+### Added
+
+- Added `launch_files/launch_files/drone_pose.py` node publishing `/drone_pose` from `/mavros/local_position/odom`.
+- Added additional unit tests and linting checks in `launch_files` package: `test_flake8`, `test_pep257`, and `test_copyright` coverage.
+
+### Changed
+
+- Refactored `launch_files` package layout for Python/ROS 2 ament packaging, relocating launch scripts under `launch_files/launch` and updating package metadata (`package.xml`, `setup.py`, `__init__.py`).
+- Reworked `launch_files/launch/multi_zed.launch.py` to launch two explicit `zed_wrapper` camera instances (`zed1`, `zed2`) with TF publishing disabled, and to define static extrinsics from `base_link` to each camera link in the launch file.
+- Updated `visual_obstacle_detection/visual_obstacle_detection/point_cloud.py` to default to direct `zed_wrapper` point cloud topics (`/zed1/zed_node/point_cloud/cloud_registered`, `/zed2/zed_node/point_cloud/cloud_registered`), support target-frame TF lookup, and maintain merged-cloud publication in the configured target frame.
+- Updated `visual_obstacle_detection/visual_obstacle_detection/obstacle_detection.py` to consume `/merged_cloud` directly, preserve incoming frame IDs, and publish obstacle cloud in the current frame.
+- Updated documentation guidance in `CONTRIBUTING.md` and `bash-commands/README.md` for the new `launch_files` package and the single `multi_zed.launch.py` entry point.
+
+### Fixed
+
+- Fixed flake8 style issues in `drone_pose.py` (blank lines, line length, trailing whitespace, final newline).
+- Fixed `launch_files` packaging to install only launch Python files (`launch/*.py`), avoiding build failures from `launch/__pycache__` paths.
+- Improved merge-node TF robustness by using latest available transform lookup for point cloud conversion, reducing timestamp extrapolation failures during live operation.
+
+### Removed
+
+- Removed legacy launch files `launch_files/launch/multi_zed_odom.launch.py` and `launch_files/launch/multi_zed_tf.launch.py` to keep `launch_files/launch/multi_zed.launch.py` as the single supported dual-camera launch entry point.
+
 ## [0.8.1] - 2026-03-11
 
 ### Removed
@@ -202,7 +227,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated ZED2 transform parameters to zero.
 - Updated static transform publisher arguments for clarity.
 
-[Unreleased]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.8.1...v0.9.0
 [0.8.0]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.5.0...v0.6.0
