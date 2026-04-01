@@ -29,19 +29,6 @@ visual-obstacle-detection/
 ├── scripts/                     # Utility scripts
 │   ├── fakedata.py              # ROS 2 fake obstacle publisher
 │   └── testmav.py               # MAVLink fake obstacle sender
-├── scan_to_mavlink/             # ROS 2 ament_python package
-│   ├── package.xml              # Package manifest (dependencies, metadata)
-│   ├── setup.py                 # Python package setup
-│   ├── setup.cfg                # Entry-point script directories
-│   ├── resource/                # ament index marker
-│   │   └── scan_to_mavlink
-│   ├── scan_to_mavlink/         # Package source code
-│   │   ├── __init__.py
-│   │   └── scan_to_mavlink_node.py
-│   └── test/                    # ament lint + pytest tests
-│       ├── test_copyright.py
-│       ├── test_flake8.py
-│       └── test_pep257.py
 ├── visual_obstacle_detection/   # ROS 2 ament_python package
 │   ├── package.xml              # Package manifest (dependencies, metadata)
 │   ├── setup.py                 # Python package setup
@@ -58,10 +45,9 @@ visual-obstacle-detection/
 │       ├── test_flake8.py
 │       └── test_pep257.py
 ```
-> **Note:** the repository now hosts *three* ROS 2 `ament_python` packages:
-> `visual_obstacle_detection`, `scan_to_mavlink`, and `launch_files`. Each
-> package has its own `package.xml` and `setup.py` and is built independently
-> by `colcon`.
+> **Note:** the repository now hosts *two* ROS 2 `ament_python` packages:
+> `visual_obstacle_detection` and `launch_files`. Each package has its own
+> `package.xml` and `setup.py` and is built independently by `colcon`.
 ## Versioning & Changelog
 
 When you prepare a release, make sure to update `CHANGELOG.md` under the

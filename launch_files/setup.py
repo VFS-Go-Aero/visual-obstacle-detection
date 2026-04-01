@@ -6,7 +6,7 @@ package_name = "launch_files"
 
 setup(
     name=package_name,
-    version="0.8.1",
+    version="0.9.0",
     packages=[package_name],
     data_files=[
         ("share/ament_index/resource_index/packages", ["resource/" + package_name]),
