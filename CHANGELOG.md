@@ -14,10 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Refactored `launch_files` package layout for Python/ROS 2 ament packaging, relocating launch scripts under `launch_files/launch` and updating package metadata.
+- Refactored `launch_files` package layout for Python/ROS 2 ament packaging, relocating launch scripts under `launch_files/launch` and updating package metadata (`package.xml`, `setup.py`, `__init__.py`).
 - Reworked `launch_files/launch/multi_zed.launch.py` to launch two explicit `zed_wrapper` camera instances (`zed1`, `zed2`) with TF publishing disabled, and to define static extrinsics from `base_link` to each camera link in the launch file.
-- Updated `visual_obstacle_detection/point_cloud.py` to default to direct `zed_wrapper` point cloud topics (`/zed1/zed_node/point_cloud/cloud_registered`, `/zed2/zed_node/point_cloud/cloud_registered`) and maintain merged-cloud publication in the configured target frame.
-- Updated obstacle detection flow to consume `/merged_cloud` directly and preserve incoming frame IDs when publishing `/merged_cloud/obstacles`.
+- Updated `visual_obstacle_detection/visual_obstacle_detection/point_cloud.py` to default to direct `zed_wrapper` point cloud topics (`/zed1/zed_node/point_cloud/cloud_registered`, `/zed2/zed_node/point_cloud/cloud_registered`), support target-frame TF lookup, and maintain merged-cloud publication in the configured target frame.
+- Updated `visual_obstacle_detection/visual_obstacle_detection/obstacle_detection.py` to consume `/merged_cloud` directly, preserve incoming frame IDs, and publish obstacle cloud in the current frame.
+- Updated documentation guidance in `CONTRIBUTING.md` and `bash-commands/README.md` for the new `launch_files` package and the single `multi_zed.launch.py` entry point.
 
 ### Fixed
 
@@ -224,7 +225,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated ZED2 transform parameters to zero.
 - Updated static transform publisher arguments for clarity.
 
-[Unreleased]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.8.1...HEAD
 [0.8.0]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.5.0...v0.6.0
