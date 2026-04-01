@@ -12,10 +12,16 @@ Run:  python3 point_cloud.py  (with cameras already launched)
 
 import numpy as np
 import rclpy
+from rclpy.duration import Duration
 from rclpy.node import Node
+from rclpy.time import Time
 from sensor_msgs.msg import PointCloud2
 from sensor_msgs_py import point_cloud2
 import std_msgs.msg as std_msg
+from tf2_ros import TransformException
+from tf2_ros.buffer import Buffer
+from tf2_ros.transform_listener import TransformListener
+from tf2_sensor_msgs.tf2_sensor_msgs import do_transform_cloud
 
 
 class PointCloud(Node):
@@ -30,6 +36,26 @@ class PointCloud(Node):
     def __init__(self) -> None:
         super().__init__("point_cloud")
 
+        self.declare_parameter("target_frame", "base_link")
+        self.declare_parameter("tf_timeout_s", 0.05)
+        self.declare_parameter("cloud_topic_zed1", "/zed1/zed_node/point_cloud/cloud_registered")
+        self.declare_parameter("cloud_topic_zed2", "/zed2/zed_node/point_cloud/cloud_registered")
+
+        self._target_frame = str(self.get_parameter("target_frame").value)
+        self._tf_timeout = Duration(seconds=float(self.get_parameter("tf_timeout_s").value))
+        self._topic_zed1 = str(self.get_parameter("cloud_topic_zed1").value)
+        self._topic_zed2 = str(self.get_parameter("cloud_topic_zed2").value)
+        self._frame_id = self._target_frame
+
+        self._tf_buffer = Buffer()
+        self._tf_listener = TransformListener(self._tf_buffer, self)
+
+        self._msgs_zed1 = 0
+        self._msgs_zed2 = 0
+        self._tf_fail_zed1 = 0
+        self._tf_fail_zed2 = 0
+        self._status_timer = self.create_timer(2.0, self._status_tick)
+
         # Latest (N, 3) float32 array from each camera, starts empty.
         self._cloud1 = np.empty((0, 3), dtype=np.float32)
         self._cloud2 = np.empty((0, 3), dtype=np.float32)
@@ -40,18 +66,27 @@ class PointCloud(Node):
         # Explicit subscriptions — no loop, no dictionary.
         self._sub_zed1 = self.create_subscription(
             PointCloud2,
-            "/zed1/zed_node/point_cloud/cloud_registered",
+            self._topic_zed1,
             self._cb_zed1,
             10,
         )
         self._sub_zed2 = self.create_subscription(
             PointCloud2,
-            "/zed2/zed_node/point_cloud/cloud_registered",
+            self._topic_zed2,
             self._cb_zed2,
             10,
         )
 
         self._merged_pub = self.create_publisher(PointCloud2, "/merged_cloud", 10)
+
+        tf_timeout_s = self._tf_timeout.nanoseconds / 1e9
+        self.get_logger().info(
+            "point_cloud started "
+            f"[target_frame={self._target_frame}, "
+            f"tf_timeout={tf_timeout_s:.3f}s, "
+            f"topic_zed1={self._topic_zed1}, "
+            f"topic_zed2={self._topic_zed2}]"
+        )
 
     def _parse(self, msg: PointCloud2) -> np.ndarray:
         """
@@ -87,17 +122,58 @@ class PointCloud(Node):
         self.get_logger().info(f"merged cloud: {self.cloud.shape[0]} pts")
         header = std_msg.Header()
         header.stamp = self.get_clock().now().to_msg()
-        header.frame_id = "base_link"
+        header.frame_id = self._frame_id
         msg = point_cloud2.create_cloud_xyz32(header, self.cloud.tolist())
         self._merged_pub.publish(msg)
 
+    def _transform_cloud(self, msg: PointCloud2) -> np.ndarray:
+        """Transform a PointCloud2 into the configured target frame and parse xyz."""
+        if msg.header.frame_id == self._target_frame:
+            return self._parse(msg)
+
+        try:
+            tf_msg = self._tf_buffer.lookup_transform(
+                self._target_frame,
+                msg.header.frame_id,
+                Time(),
+                timeout=self._tf_timeout,
+            )
+            transformed = do_transform_cloud(msg, tf_msg)
+        except TransformException as exc:
+            if "zed1" in msg.header.frame_id:
+                self._tf_fail_zed1 += 1
+            elif "zed2" in msg.header.frame_id:
+                self._tf_fail_zed2 += 1
+            self.get_logger().warning(
+                f"TF unavailable {msg.header.frame_id}->{self._target_frame}: {exc}"
+            )
+            return np.empty((0, 3), dtype=np.float32)
+
+        return self._parse(transformed)
+
     def _cb_zed1(self, msg: PointCloud2) -> None:
-        self._cloud1 = self._parse(msg)
+        self._msgs_zed1 += 1
+        self._cloud1 = self._transform_cloud(msg)
         self._merge()
 
     def _cb_zed2(self, msg: PointCloud2) -> None:
-        self._cloud2 = self._parse(msg)
+        self._msgs_zed2 += 1
+        self._cloud2 = self._transform_cloud(msg)
         self._merge()
+
+    def _status_tick(self) -> None:
+        """Periodic diagnostics to show whether inputs and TF are healthy."""
+        if self._msgs_zed1 == 0 and self._msgs_zed2 == 0:
+            self.get_logger().warning(
+                f"Waiting for camera clouds on {self._topic_zed1} and {self._topic_zed2}"
+            )
+            return
+
+        self.get_logger().info(
+            f"status: zed1_msgs={self._msgs_zed1}, zed2_msgs={self._msgs_zed2}, "
+            f"tf_fail_zed1={self._tf_fail_zed1}, tf_fail_zed2={self._tf_fail_zed2}, "
+            f"merged_pts={self.cloud.shape[0]}"
+        )
 
 
 def main() -> None:

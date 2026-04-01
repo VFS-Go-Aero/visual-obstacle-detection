@@ -24,8 +24,7 @@ visual-obstacle-detection/
 ├── launch_files/                # ROS 2 ament_python package for launch files
 │   ├── package.xml              # package manifest
 │   ├── launch/                  # Python launch definitions
-│   │   ├── multi_zed.launch.py
-│   │   └── multi_zed_tf.launch.py
+│   │   └── multi_zed.launch.py
 │   └── setup.py                 # Python package setup (empty boilerplate)
 ├── scripts/                     # Utility scripts
 │   ├── fakedata.py              # ROS 2 fake obstacle publisher
