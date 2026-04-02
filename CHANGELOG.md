@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added `launch_files/launch/single_zed.launch.py` single ZED launch file with static transform support from `base_link` to set camera link, intended for use in single-camera drone.
+
 ## [0.9.0] - 2026-03-31
 
 ### Added
