@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Updated `visual_obstacle_detection/visual_obstacle_detection/obstacle_to_mavlink.py` to convert obstacle point coordinates from the node's incoming body-centered RFU convention (`x=right, y=forward, z=up`) into MAVLink body FRD (`x=forward, y=right, z=down`) before publishing `ObstacleDistance3D.position`.
+- Updated `visual_obstacle_detection/visual_obstacle_detection/obstacle_to_mavlink.py` to publish `ObstacleDistance3D.frame` as explicit `MAV_FRAME_BODY_FRD` (`12`) instead of `0` (MAVROS default frame), ensuring body-relative obstacle data for ArduPilot.
+
 ## [0.9.0] - 2026-03-31
 
 ### Added
