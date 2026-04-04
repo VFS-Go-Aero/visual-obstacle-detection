@@ -1,0 +1,656 @@
+#!/usr/bin/env python3
+"""
+Drone Comprehensive Data Logger — Jetson Edition
+Replicates ArduPilot DataFlash logs over MAVLink in real time.
+
+Logs to separate CSVs:
+  attitude.csv         — roll, pitch, yaw, rates
+  position.csv         — lat, lon, alt, relative alt
+  velocity.csv         — vx, vy, vz, groundspeed, airspeed
+  battery.csv          — voltage, current, remaining %
+  motors.csv           — servo/PWM outputs (up to 16 channels)
+  rc_input.csv         — RC receiver channel inputs
+  obstacle_3d.csv      — OBSTACLE_DISTANCE_3D x, y, z, distance
+  imu.csv              — raw accel + gyro
+  vibe.csv             — vibration x, y, z, clipping
+  ekf.csv              — EKF status flags
+  gps.csv              — fix type, sats, hdop, speed, course
+  system.csv           — flight mode, arm state, system status
+  ros2_topics.log      — raw ROS2 topic echo (plain text)
+  system_journal.log   — journald (plain text)
+  jetson_health.csv    — CPU, GPU, RAM via tegrastats
+"""
+
+import os
+import csv
+import math
+import time
+import signal
+import threading
+import subprocess
+import argparse
+from datetime import datetime
+from pathlib import Path
+from pymavlink import mavutil
+
+# ─────────────────────────────────────────────────────────
+#  Configuration
+# ─────────────────────────────────────────────────────────
+MAV_CONNECTION    = "udp:0.0.0.0:14550"   # or "/dev/ttyTHS1" for UART
+LOG_DIR           = "/home/jetson/drone_logs"
+ROS_DISTRO        = "humble"
+ROS2_TOPICS       = []                    # empty = all topics
+JOURNALD_UNITS    = []                    # empty = all units
+LOG_HZ            = 10                    # MAVLink log rate (Hz)
+HEALTH_INTERVAL   = 2                     # tegrastats interval (sec)
+REQUEST_STREAMS   = True                  # ask FC to send all streams
+# ─────────────────────────────────────────────────────────
+
+stop_event = threading.Event()
+
+
+# ══════════════════════════════════════════════════════════
+#  Helpers
+# ══════════════════════════════════════════════════════════
+def ts():
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+
+
+def session_dir(base: str) -> Path:
+    name = datetime.now().strftime("session_%Y%m%d_%H%M%S")
+    path = Path(base) / name
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+class CSVWriter:
+    """Thread-safe CSV file writer with auto-header."""
+    def __init__(self, path: Path, fields: list):
+        self.path   = path
+        self.fields = ["timestamp"] + fields
+        self._lock  = threading.Lock()
+        self._fh    = open(path, "w", newline="", buffering=1)
+        self._writer = csv.DictWriter(self._fh, fieldnames=self.fields,
+                                      extrasaction="ignore")
+        self._writer.writeheader()
+
+    def write(self, row: dict):
+        row["timestamp"] = ts()
+        with self._lock:
+            self._writer.writerow(row)
+
+    def close(self):
+        self._fh.flush()
+        self._fh.close()
+
+
+# ══════════════════════════════════════════════════════════
+#  MAVLink Logger
+# ══════════════════════════════════════════════════════════
+class MAVLinkLogger(threading.Thread):
+    """
+    Connects to flight controller and logs all telemetry to CSV files.
+    Mirrors DataFlash log messages:
+      ATT, GPS, BARO, BAT, RCOU, RCIN, IMU, VIBE, EKF, MODE
+    """
+
+    MSG_TYPES = [
+        "ATTITUDE",
+        "GLOBAL_POSITION_INT",
+        "GPS_RAW_INT",
+        "VFR_HUD",
+        "BATTERY_STATUS",
+        "SERVO_OUTPUT_RAW",
+        "RC_CHANNELS",
+        "RAW_IMU",
+        "SCALED_IMU2",
+        "VIBRATION",
+        "EKF_STATUS_REPORT",
+        "HEARTBEAT",
+        "SYS_STATUS",
+        "OBSTACLE_DISTANCE_3D",
+        "LOCAL_POSITION_NED",
+        "SCALED_PRESSURE",
+    ]
+
+    def __init__(self, session: Path):
+        super().__init__(daemon=True)
+        self.session = session
+        self.mav     = None
+        self._writers = {}
+
+    def _setup_writers(self):
+        s = self.session
+        self._writers = {
+            "attitude":   CSVWriter(s / "attitude.csv",
+                            ["roll_deg", "pitch_deg", "yaw_deg",
+                             "rollspeed_dps", "pitchspeed_dps", "yawspeed_dps"]),
+
+            "position":   CSVWriter(s / "position.csv",
+                            ["lat_deg", "lon_deg", "alt_msl_m",
+                             "alt_rel_m", "vx_ms", "vy_ms", "vz_ms",
+                             "hdg_deg"]),
+
+            "gps":        CSVWriter(s / "gps.csv",
+                            ["fix_type", "sats_visible", "hdop", "vdop",
+                             "lat_deg", "lon_deg", "alt_m",
+                             "vel_ms", "cog_deg"]),
+
+            "velocity":   CSVWriter(s / "velocity.csv",
+                            ["groundspeed_ms", "airspeed_ms",
+                             "vx_ms", "vy_ms", "vz_ms",
+                             "climb_ms", "throttle_pct"]),
+
+            "battery":    CSVWriter(s / "battery.csv",
+                            ["voltage_v", "current_a",
+                             "consumed_mah", "remaining_pct",
+                             "cell1_mv", "cell2_mv", "cell3_mv", "cell4_mv"]),
+
+            "motors":     CSVWriter(s / "motors.csv",
+                            ["ch1_us", "ch2_us", "ch3_us", "ch4_us",
+                             "ch5_us", "ch6_us", "ch7_us", "ch8_us",
+                             "ch9_us", "ch10_us", "ch11_us", "ch12_us"]),
+
+            "rc_input":   CSVWriter(s / "rc_input.csv",
+                            ["ch1", "ch2", "ch3", "ch4",
+                             "ch5", "ch6", "ch7", "ch8",
+                             "ch9", "ch10", "ch11", "ch12",
+                             "rssi"]),
+
+            "imu":        CSVWriter(s / "imu.csv",
+                            ["xacc_mg", "yacc_mg", "zacc_mg",
+                             "xgyro_mdps", "ygyro_mdps", "zgyro_mdps",
+                             "xmag_mgauss", "ymag_mgauss", "zmag_mgauss",
+                             "temp_degc"]),
+
+            "vibe":       CSVWriter(s / "vibe.csv",
+                            ["vibe_x", "vibe_y", "vibe_z",
+                             "clipping_0", "clipping_1", "clipping_2"]),
+
+            "ekf":        CSVWriter(s / "ekf.csv",
+                            ["velocity_variance", "pos_horiz_variance",
+                             "pos_vert_variance", "compass_variance",
+                             "terrain_alt_variance", "flags"]),
+
+            "obstacle3d": CSVWriter(s / "obstacle_3d.csv",
+                            ["sensor_type", "frame",
+                             "x_m", "y_m", "z_m",
+                             "dist_3d_m",
+                             "min_distance_m", "max_distance_m"]),
+
+            "system":     CSVWriter(s / "system.csv",
+                            ["flight_mode", "armed",
+                             "system_status", "voltage_v",
+                             "current_a", "drop_rate_pct"]),
+
+            "baro":       CSVWriter(s / "baro.csv",
+                            ["press_abs_hpa", "press_diff_hpa",
+                             "temperature_degc", "alt_m"]),
+        }
+
+    def _request_streams(self):
+        """Ask the FC to send all data streams at LOG_HZ."""
+        streams = [
+            mavutil.mavlink.MAV_DATA_STREAM_ALL,
+        ]
+        for stream in streams:
+            self.mav.mav.request_data_stream_send(
+                self.mav.target_system,
+                self.mav.target_component,
+                stream,
+                LOG_HZ,
+                1  # start
+            )
+        print("[MAVLink] Requested all data streams.")
+
+    # ── Message handlers ────────────────────────────────────
+
+    def _handle_attitude(self, m):
+        self._writers["attitude"].write({
+            "roll_deg":       math.degrees(m.roll),
+            "pitch_deg":      math.degrees(m.pitch),
+            "yaw_deg":        math.degrees(m.yaw),
+            "rollspeed_dps":  math.degrees(m.rollspeed),
+            "pitchspeed_dps": math.degrees(m.pitchspeed),
+            "yawspeed_dps":   math.degrees(m.yawspeed),
+        })
+
+    def _handle_global_position(self, m):
+        self._writers["position"].write({
+            "lat_deg":    m.lat / 1e7,
+            "lon_deg":    m.lon / 1e7,
+            "alt_msl_m":  m.alt / 1000.0,
+            "alt_rel_m":  m.relative_alt / 1000.0,
+            "vx_ms":      m.vx / 100.0,
+            "vy_ms":      m.vy / 100.0,
+            "vz_ms":      m.vz / 100.0,
+            "hdg_deg":    m.hdg / 100.0,
+        })
+
+    def _handle_gps_raw(self, m):
+        fix_map = {0: "NO_GPS", 1: "NO_FIX", 2: "2D", 3: "3D",
+                   4: "DGPS", 5: "RTK_FLOAT", 6: "RTK_FIXED"}
+        self._writers["gps"].write({
+            "fix_type":     fix_map.get(m.fix_type, m.fix_type),
+            "sats_visible": m.satellites_visible,
+            "hdop":         m.eph / 100.0 if m.eph != 65535 else "N/A",
+            "vdop":         m.epv / 100.0 if m.epv != 65535 else "N/A",
+            "lat_deg":      m.lat / 1e7,
+            "lon_deg":      m.lon / 1e7,
+            "alt_m":        m.alt / 1000.0,
+            "vel_ms":       m.vel / 100.0 if m.vel != 65535 else "N/A",
+            "cog_deg":      m.cog / 100.0 if m.cog != 65535 else "N/A",
+        })
+
+    def _handle_vfr_hud(self, m):
+        self._writers["velocity"].write({
+            "groundspeed_ms": m.groundspeed,
+            "airspeed_ms":    m.airspeed,
+            "vx_ms":          "N/A",
+            "vy_ms":          "N/A",
+            "vz_ms":          "N/A",
+            "climb_ms":       m.climb,
+            "throttle_pct":   m.throttle,
+        })
+
+    def _handle_battery(self, m):
+        cells = m.voltages  # up to 10 cell voltages in mV
+        self._writers["battery"].write({
+            "voltage_v":      m.voltage_battery / 1000.0 if m.voltage_battery != 65535 else "N/A",
+            "current_a":      m.current_battery / 100.0  if m.current_battery != -1    else "N/A",
+            "consumed_mah":   m.current_consumed if m.current_consumed != -1 else "N/A",
+            "remaining_pct":  m.battery_remaining if m.battery_remaining != -1 else "N/A",
+            "cell1_mv":       cells[0] if len(cells) > 0 and cells[0] != 65535 else "N/A",
+            "cell2_mv":       cells[1] if len(cells) > 1 and cells[1] != 65535 else "N/A",
+            "cell3_mv":       cells[2] if len(cells) > 2 and cells[2] != 65535 else "N/A",
+            "cell4_mv":       cells[3] if len(cells) > 3 and cells[3] != 65535 else "N/A",
+        })
+
+    def _handle_servo_output(self, m):
+        self._writers["motors"].write({
+            "ch1_us":  m.servo1_raw,  "ch2_us":  m.servo2_raw,
+            "ch3_us":  m.servo3_raw,  "ch4_us":  m.servo4_raw,
+            "ch5_us":  m.servo5_raw,  "ch6_us":  m.servo6_raw,
+            "ch7_us":  m.servo7_raw,  "ch8_us":  m.servo8_raw,
+            "ch9_us":  m.servo9_raw,  "ch10_us": m.servo10_raw,
+            "ch11_us": m.servo11_raw, "ch12_us": m.servo12_raw,
+        })
+
+    def _handle_rc_channels(self, m):
+        self._writers["rc_input"].write({
+            "ch1":  m.chan1_raw,  "ch2":  m.chan2_raw,
+            "ch3":  m.chan3_raw,  "ch4":  m.chan4_raw,
+            "ch5":  m.chan5_raw,  "ch6":  m.chan6_raw,
+            "ch7":  m.chan7_raw,  "ch8":  m.chan8_raw,
+            "ch9":  m.chan9_raw,  "ch10": m.chan10_raw,
+            "ch11": m.chan11_raw, "ch12": m.chan12_raw,
+            "rssi": m.rssi,
+        })
+
+    def _handle_raw_imu(self, m):
+        self._writers["imu"].write({
+            "xacc_mg":    m.xacc,   "yacc_mg":    m.yacc,   "zacc_mg":    m.zacc,
+            "xgyro_mdps": m.xgyro,  "ygyro_mdps": m.ygyro,  "zgyro_mdps": m.zgyro,
+            "xmag_mgauss":m.xmag,   "ymag_mgauss":m.ymag,   "zmag_mgauss":m.zmag,
+            "temp_degc":  m.temperature / 100.0,
+        })
+
+    def _handle_vibration(self, m):
+        self._writers["vibe"].write({
+            "vibe_x":     m.vibration_x,
+            "vibe_y":     m.vibration_y,
+            "vibe_z":     m.vibration_z,
+            "clipping_0": m.clipping_0,
+            "clipping_1": m.clipping_1,
+            "clipping_2": m.clipping_2,
+        })
+
+    def _handle_ekf(self, m):
+        self._writers["ekf"].write({
+            "velocity_variance":    m.velocity_variance,
+            "pos_horiz_variance":   m.pos_horiz_variance,
+            "pos_vert_variance":    m.pos_vert_variance,
+            "compass_variance":     m.compass_variance,
+            "terrain_alt_variance": m.terrain_alt_variance,
+            "flags":                m.flags,
+        })
+
+    def _handle_heartbeat(self, m):
+        mode_map = {
+            0: "STABILIZE", 1: "ACRO", 2: "ALT_HOLD", 3: "AUTO",
+            4: "GUIDED",    5: "LOITER", 6: "RTL",     7: "CIRCLE",
+            9: "LAND",     16: "POSHOLD", 17: "BRAKE", 20: "GUIDED_NOGPS",
+        }
+        armed = bool(m.base_mode & mavutil.mavlink.MAV_MODE_FLAG_SAFETY_ARMED)
+        self._writers["system"].write({
+            "flight_mode":   mode_map.get(m.custom_mode, f"MODE_{m.custom_mode}"),
+            "armed":         armed,
+            "system_status": m.system_status,
+            "voltage_v":     "N/A",
+            "current_a":     "N/A",
+            "drop_rate_pct": "N/A",
+        })
+
+    def _handle_obstacle_3d(self, m):
+        dist = math.sqrt(m.x**2 + m.y**2 + m.z**2)
+        frame_map = {0: "GLOBAL", 1: "LOCAL_NED", 2: "BODY_NED",
+                     3: "BODY_OFFSET_NED", 10: "LOCAL_OFFSET_NED"}
+        self._writers["obstacle3d"].write({
+            "sensor_type":    m.sensor_type,
+            "frame":          frame_map.get(m.frame, m.frame),
+            "x_m":            round(m.x, 4),
+            "y_m":            round(m.y, 4),
+            "z_m":            round(m.z, 4),
+            "dist_3d_m":      round(dist, 4),
+            "min_distance_m": m.min_distance / 100.0,
+            "max_distance_m": m.max_distance / 100.0,
+        })
+
+    def _handle_scaled_pressure(self, m):
+        # Approximate altitude from pressure using international standard atmosphere
+        p0 = 101325.0
+        p  = m.press_abs * 100.0  # hPa → Pa
+        alt = 44330.0 * (1.0 - (p / p0) ** (1.0 / 5.255))
+        self._writers["baro"].write({
+            "press_abs_hpa":  m.press_abs,
+            "press_diff_hpa": m.press_diff,
+            "temperature_degc": m.temperature / 100.0,
+            "alt_m":          round(alt, 2),
+        })
+
+    # ── Dispatch table ──────────────────────────────────────
+    def _dispatch(self, msg):
+        t = msg.get_type()
+        handlers = {
+            "ATTITUDE":            self._handle_attitude,
+            "GLOBAL_POSITION_INT": self._handle_global_position,
+            "GPS_RAW_INT":         self._handle_gps_raw,
+            "VFR_HUD":             self._handle_vfr_hud,
+            "BATTERY_STATUS":      self._handle_battery,
+            "SERVO_OUTPUT_RAW":    self._handle_servo_output,
+            "RC_CHANNELS":         self._handle_rc_channels,
+            "RAW_IMU":             self._handle_raw_imu,
+            "VIBRATION":           self._handle_vibration,
+            "EKF_STATUS_REPORT":   self._handle_ekf,
+            "HEARTBEAT":           self._handle_heartbeat,
+            "OBSTACLE_DISTANCE_3D":self._handle_obstacle_3d,
+            "SCALED_PRESSURE":     self._handle_scaled_pressure,
+        }
+        handler = handlers.get(t)
+        if handler:
+            try:
+                handler(msg)
+            except Exception as e:
+                pass  
+
+    # ── Main loop ───────────────────────────────────────────
+    def run(self):
+        print(f"[MAVLink] Connecting to {MAV_CONNECTION} ...")
+        try:
+            self.mav = mavutil.mavlink_connection(MAV_CONNECTION)
+            self.mav.wait_heartbeat(timeout=15)
+            print(f"[MAVLink] Connected — System {self.mav.target_system}, "
+                  f"Component {self.mav.target_component}")
+        except Exception as e:
+            print(f"[MAVLink] Connection failed: {e}")
+            return
+
+        self._setup_writers()
+        if REQUEST_STREAMS:
+            self._request_streams()
+
+        print("[MAVLink] Logging started.")
+        while not stop_event.is_set():
+            msg = self.mav.recv_match(type=self.MSG_TYPES,
+                                      blocking=True, timeout=0.1)
+            if msg:
+                self._dispatch(msg)
+
+        for w in self._writers.values():
+            w.close()
+        print("[MAVLink] Logger stopped.")
+
+
+# ══════════════════════════════════════════════════════════
+#  ROS2 Logger (plain text — structured data comes from MAVLink)
+# ══════════════════════════════════════════════════════════
+class ROS2Logger(threading.Thread):
+    def __init__(self, session: Path):
+        super().__init__(daemon=True)
+        self.log_path = session / "ros2_topics.log"
+        self._procs   = []
+
+    def run(self):
+        src = f"source /opt/ros/{ROS_DISTRO}/setup.bash 2>/dev/null"
+        with open(self.log_path, "a", buffering=1) as fh:
+            fh.write(f"{'='*60}\nROS2 Topics — {ts()}\n{'='*60}\n")
+
+            # Discover topics
+            try:
+                result = subprocess.run(
+                    f'bash -c \'{src} && ros2 topic list\'',
+                    shell=True, capture_output=True, text=True, timeout=10)
+                topics = [t.strip() for t in result.stdout.splitlines() if t.strip()]
+            except Exception:
+                topics = []
+
+            if not topics:
+                fh.write(f"{ts()} [WARN] No ROS2 topics found.\n")
+                return
+
+            topics_to_log = ROS2_TOPICS if ROS2_TOPICS else topics
+            fh.write(f"{ts()} Subscribing to: {topics_to_log}\n\n")
+            fh.flush()
+
+            for topic in topics_to_log:
+                cmd = f'bash -c \'{src} && ros2 topic echo {topic}\''
+                proc = subprocess.Popen(cmd, shell=True,
+                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                    text=True, bufsize=1)
+                self._procs.append(proc)
+
+                def _reader(p=proc, t=topic):
+                    for line in p.stdout:
+                        if stop_event.is_set(): break
+                        fh.write(f"{ts()} [{t}] {line}")
+                        fh.flush()
+
+                threading.Thread(target=_reader, daemon=True).start()
+
+            stop_event.wait()
+
+        for p in self._procs:
+            try: p.terminate()
+            except: pass
+
+    def stop(self):
+        for p in self._procs:
+            try: p.terminate()
+            except: pass
+
+
+# ══════════════════════════════════════════════════════════
+#  System Journal Logger
+# ══════════════════════════════════════════════════════════
+class SystemLogger(threading.Thread):
+    def __init__(self, session: Path):
+        super().__init__(daemon=True)
+        self.log_path = session / "system_journal.log"
+        self._proc    = None
+
+    def run(self):
+        cmd = ["journalctl", "-f", "-o", "short-precise", "--no-pager"]
+        for u in JOURNALD_UNITS:
+            cmd += ["-u", u]
+
+        with open(self.log_path, "a", buffering=1) as fh:
+            fh.write(f"{'='*60}\nSystem Journal — {ts()}\n{'='*60}\n")
+            try:
+                self._proc = subprocess.Popen(cmd,
+                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                    text=True, bufsize=1)
+                for line in self._proc.stdout:
+                    if stop_event.is_set(): break
+                    fh.write(line)
+                    fh.flush()
+            except FileNotFoundError:
+                fh.write(f"{ts()} [WARN] journalctl not found.\n")
+
+    def stop(self):
+        if self._proc:
+            try: self._proc.terminate()
+            except: pass
+
+
+# ══════════════════════════════════════════════════════════
+#  Jetson Health Logger (CSV)
+# ══════════════════════════════════════════════════════════
+class JetsonHealthLogger(threading.Thread):
+    """Parses tegrastats output into structured CSV."""
+
+    def __init__(self, session: Path):
+        super().__init__(daemon=True)
+        self._writer = CSVWriter(session / "jetson_health.csv",
+            ["ram_used_mb", "ram_total_mb",
+             "cpu1_pct", "cpu2_pct", "cpu3_pct", "cpu4_pct",
+             "cpu_temp_c", "gpu_temp_c",
+             "gpu_pct", "emc_pct",
+             "power_cur_mw", "power_avg_mw"])
+
+    def _parse_tegrastats(self, line: str) -> dict:
+        """Best-effort parse of tegrastats one-liner."""
+        import re
+        row = {}
+        # RAM
+        m = re.search(r'RAM (\d+)/(\d+)MB', line)
+        if m:
+            row["ram_used_mb"]  = int(m.group(1))
+            row["ram_total_mb"] = int(m.group(2))
+        # CPU temps
+        m = re.search(r'CPU@([\d.]+)C', line)
+        if m: row["cpu_temp_c"] = float(m.group(1))
+        m = re.search(r'GPU@([\d.]+)C', line)
+        if m: row["gpu_temp_c"] = float(m.group(1))
+        # CPU usage per core
+        cpus = re.findall(r'(\d+)%@\d+', line)
+        for i, pct in enumerate(cpus[:4], 1):
+            row[f"cpu{i}_pct"] = int(pct)
+        # GR3D (GPU %)
+        m = re.search(r'GR3D_FREQ (\d+)%', line)
+        if m: row["gpu_pct"] = int(m.group(1))
+        # EMC
+        m = re.search(r'EMC_FREQ (\d+)%', line)
+        if m: row["emc_pct"] = int(m.group(1))
+        # Power
+        m = re.search(r'VDD_IN (\d+)/(\d+)', line)
+        if m:
+            row["power_cur_mw"] = int(m.group(1))
+            row["power_avg_mw"] = int(m.group(2))
+        return row
+
+    def run(self):
+        while not stop_event.is_set():
+            try:
+                result = subprocess.run(
+                    ["tegrastats", "--interval", "100"],
+                    capture_output=True, text=True, timeout=2)
+                lines = result.stdout.strip().splitlines()
+                if lines:
+                    row = self._parse_tegrastats(lines[0])
+                    if row:
+                        self._writer.write(row)
+            except FileNotFoundError:
+                # Fallback: loadavg
+                try:
+                    with open("/proc/loadavg") as f:
+                        load = f.read().split()
+                    self._writer.write({"cpu1_pct": load[0]})
+                except: pass
+            except: pass
+            time.sleep(HEALTH_INTERVAL)
+
+        self._writer.close()
+
+
+# ══════════════════════════════════════════════════════════
+#  Main
+# ══════════════════════════════════════════════════════════
+def handle_signal(sig, frame):
+    print("\n[INFO] Stopping — flushing all logs ...")
+    stop_event.set()
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Drone comprehensive data logger")
+    parser.add_argument("--connection", default=MAV_CONNECTION)
+    parser.add_argument("--log-dir",   default=LOG_DIR)
+    parser.add_argument("--no-ros2",   action="store_true")
+    parser.add_argument("--no-system", action="store_true")
+    parser.add_argument("--no-health", action="store_true")
+    args = parser.parse_args()
+
+    session = session_dir(args.log_dir)
+    print(f"\n{'='*55}")
+    print(f"  Drone Data Logger — session: {session.name}")
+    print(f"  Logs → {session}")
+    print(f"{'='*55}\n")
+
+    # Write session metadata
+    with open(session / "session_info.txt", "w") as f:
+        f.write(f"Start       : {ts()}\n")
+        f.write(f"MAVLink     : {args.connection}\n")
+        f.write(f"ROS distro  : {ROS_DISTRO}\n")
+        f.write(f"Log rate    : {LOG_HZ} Hz\n")
+
+    signal.signal(signal.SIGINT,  handle_signal)
+    signal.signal(signal.SIGTERM, handle_signal)
+
+    threads = []
+
+    # MAVLink (always on)
+    mav_logger = MAVLinkLogger(session)
+    mav_logger.start()
+    threads.append(mav_logger)
+
+    # ROS2
+    if not args.no_ros2:
+        ros_logger = ROS2Logger(session)
+        ros_logger.start()
+        threads.append(ros_logger)
+        print("[ROS2]    Topic logger started.")
+
+    # System journal
+    if not args.no_system:
+        sys_logger = SystemLogger(session)
+        sys_logger.start()
+        threads.append(sys_logger)
+        print("[System]  Journal logger started.")
+
+    # Jetson health
+    if not args.no_health:
+        health_logger = JetsonHealthLogger(session)
+        health_logger.start()
+        threads.append(health_logger)
+        print("[Health]  Jetson health CSV logger started.")
+
+    print("\n[INFO] All loggers running. Press Ctrl+C to stop.\n")
+    stop_event.wait()
+
+    for t in threads:
+        t.join(timeout=4)
+
+    with open(session / "session_info.txt", "a") as f:
+        f.write(f"End         : {ts()}\n")
+
+    print(f"\n[DONE] All logs saved to: {session}\n")
+
+    # Print summary of files created
+    print("Files created:")
+    for f in sorted(session.iterdir()):
+        size = f.stat().st_size
+        print(f"  {f.name:<30} {size:>8,} bytes")
+
+
+if __name__ == "__main__":
+    main()
+    
