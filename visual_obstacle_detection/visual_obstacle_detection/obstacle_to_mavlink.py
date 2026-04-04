@@ -6,6 +6,10 @@ from sensor_msgs.msg import PointCloud2
 from sensor_msgs_py import point_cloud2
 
 
+# MAV_FRAME_BODY_FRD from MAVLink enum (common.xml).
+MAV_FRAME_BODY_FRD = 12
+
+
 class ObstacleToMavlink(Node):
 
     def __init__(self) -> None:
@@ -65,13 +69,18 @@ class ObstacleToMavlink(Node):
             for x, y, z, obstacle_id in cloud:
                 obstacle_id = int(obstacle_id % 65536)
 
+                # Convert incoming body-centered RFU points to body FRD.
+                x_frd = y
+                y_frd = x
+                z_frd = -z
+
                 msg3D = ObstacleDistance3D()
                 msg3D.header.stamp = now
                 msg3D.header.frame_id = "base_link"
                 msg3D.sensor_type = 1
-                msg3D.frame = 0
+                msg3D.frame = MAV_FRAME_BODY_FRD
                 msg3D.obstacle_id = obstacle_id
-                msg3D.position = Point(x=x, y=y, z=z)
+                msg3D.position = Point(x=x_frd, y=y_frd, z=z_frd)
                 msg3D.min_distance = self._min_distance
                 msg3D.max_distance = self._max_distance
                 self._pub_3d.publish(msg3D)
