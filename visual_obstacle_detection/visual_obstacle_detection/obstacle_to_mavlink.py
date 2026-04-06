@@ -70,8 +70,8 @@ class ObstacleToMavlink(Node):
                 obstacle_id = int(obstacle_id % 65536)
 
                 # Convert incoming body-centered RFU points to body FRD.
-                x_frd = y
-                y_frd = x
+                x_frd = x
+                y_frd = -y
                 z_frd = -z
 
                 msg3D = ObstacleDistance3D()
