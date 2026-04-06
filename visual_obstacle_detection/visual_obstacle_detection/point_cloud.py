@@ -12,6 +12,8 @@ Run:  python3 point_cloud.py  (with cameras already launched)
 
 import numpy as np
 import rclpy
+import xml.etree.ElementTree as ET
+from pathlib import Path
 from rclpy.duration import Duration
 from rclpy.node import Node
 from rclpy.time import Time
@@ -40,11 +42,16 @@ class PointCloud(Node):
         self.declare_parameter("tf_timeout_s", 0.05)
         self.declare_parameter("cloud_topic_zed1", "/zed1/zed_node/point_cloud/cloud_registered")
         self.declare_parameter("cloud_topic_zed2", "/zed2/zed_node/point_cloud/cloud_registered")
+        self.declare_parameter(
+            "exclude_boxes_xml",
+            str(Path(__file__).with_name("excluded_boxes.xml")),
+        )
 
         self._target_frame = str(self.get_parameter("target_frame").value)
         self._tf_timeout = Duration(seconds=float(self.get_parameter("tf_timeout_s").value))
         self._topic_zed1 = str(self.get_parameter("cloud_topic_zed1").value)
         self._topic_zed2 = str(self.get_parameter("cloud_topic_zed2").value)
+        self._exclude_boxes_xml = str(self.get_parameter("exclude_boxes_xml").value)
         self._frame_id = self._target_frame
 
         self._tf_buffer = Buffer()
@@ -62,6 +69,7 @@ class PointCloud(Node):
 
         # Merged cloud from both cameras — always up to date.
         self.cloud = np.empty((0, 3), dtype=np.float32)
+        self._exclude_boxes = self._load_exclude_boxes(self._exclude_boxes_xml)
 
         # Explicit subscriptions — no loop, no dictionary.
         self._sub_zed1 = self.create_subscription(
@@ -85,8 +93,89 @@ class PointCloud(Node):
             f"[target_frame={self._target_frame}, "
             f"tf_timeout={tf_timeout_s:.3f}s, "
             f"topic_zed1={self._topic_zed1}, "
-            f"topic_zed2={self._topic_zed2}]"
+            f"topic_zed2={self._topic_zed2}, "
+            f"exclude_boxes={len(self._exclude_boxes)}]"
         )
+
+    def _load_exclude_boxes(self, xml_path: str) -> list[tuple[np.ndarray, np.ndarray]]:
+        """
+        Load axis-aligned exclusion boxes from XML in target_frame coordinates.
+
+        XML format:
+          <exclusion_boxes>
+            <box>
+              <min x="-0.5" y="-0.5" z="-0.2"/>
+              <max x="0.5" y="0.5" z="0.3"/>
+            </box>
+          </exclusion_boxes>
+        """
+        path = Path(xml_path)
+        if not path.exists():
+            self.get_logger().warning(
+                f"exclude_boxes_xml not found: {xml_path}; no exclusion filtering"
+            )
+            return []
+
+        try:
+            root = ET.parse(path).getroot()
+        except ET.ParseError as exc:
+            self.get_logger().error(
+                f"Failed to parse exclusion XML {xml_path}: {exc}; no exclusion filtering"
+            )
+            return []
+
+        boxes: list[tuple[np.ndarray, np.ndarray]] = []
+        for idx, box in enumerate(root.findall("box"), start=1):
+            min_node = box.find("min")
+            max_node = box.find("max")
+            if min_node is None or max_node is None:
+                self.get_logger().warning(
+                    f"Skipping box #{idx} in {xml_path}: missing <min> or <max>"
+                )
+                continue
+
+            try:
+                min_corner = np.array(
+                    [
+                        float(min_node.attrib["x"]),
+                        float(min_node.attrib["y"]),
+                        float(min_node.attrib["z"]),
+                    ],
+                    dtype=np.float32,
+                )
+                max_corner = np.array(
+                    [
+                        float(max_node.attrib["x"]),
+                        float(max_node.attrib["y"]),
+                        float(max_node.attrib["z"]),
+                    ],
+                    dtype=np.float32,
+                )
+            except (KeyError, ValueError) as exc:
+                self.get_logger().warning(
+                    f"Skipping box #{idx} in {xml_path}: invalid min/max values ({exc})"
+                )
+                continue
+
+            lo = np.minimum(min_corner, max_corner)
+            hi = np.maximum(min_corner, max_corner)
+            boxes.append((lo, hi))
+
+        self.get_logger().info(
+            f"Loaded {len(boxes)} exclusion boxes from {xml_path} in frame {self._target_frame}"
+        )
+        return boxes
+
+    def _apply_exclude_boxes(self, points: np.ndarray) -> np.ndarray:
+        """Remove points that fall inside any configured exclusion box."""
+        if points.size == 0 or not self._exclude_boxes:
+            return points
+
+        keep_mask = np.ones(points.shape[0], dtype=bool)
+        for lo, hi in self._exclude_boxes:
+            inside = np.all((points >= lo) & (points <= hi), axis=1)
+            keep_mask &= ~inside
+        return points[keep_mask]
 
     def _parse(self, msg: PointCloud2) -> np.ndarray:
         """
@@ -118,7 +207,8 @@ class PointCloud(Node):
 
     def _merge(self) -> None:
         """Concatenate the two camera clouds and publish on /merged_cloud."""
-        self.cloud = np.concatenate((self._cloud1, self._cloud2), axis=0)
+        merged = np.concatenate((self._cloud1, self._cloud2), axis=0)
+        self.cloud = self._apply_exclude_boxes(merged)
         self.get_logger().info(f"merged cloud: {self.cloud.shape[0]} pts")
         header = std_msg.Header()
         header.stamp = self.get_clock().now().to_msg()
