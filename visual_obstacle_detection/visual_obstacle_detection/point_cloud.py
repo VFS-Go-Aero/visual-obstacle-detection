@@ -14,6 +14,12 @@ import numpy as np
 import rclpy
 import xml.etree.ElementTree as ET
 from pathlib import Path
+
+try:
+    from ament_index_python.packages import get_package_share_directory
+except ImportError:
+    get_package_share_directory = None
+
 from rclpy.duration import Duration
 from rclpy.node import Node
 from rclpy.time import Time
@@ -24,6 +30,21 @@ from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 from tf2_sensor_msgs.tf2_sensor_msgs import do_transform_cloud
+
+
+def _default_exclude_boxes_xml() -> str:
+    """Return a robust default path for exclusion-box XML across run modes."""
+    if get_package_share_directory is not None:
+        try:
+            share_dir = Path(get_package_share_directory("visual_obstacle_detection"))
+            share_path = share_dir / "excluded_boxes.xml"
+            if share_path.exists():
+                return str(share_path)
+        except Exception:
+            pass
+
+    # Fallback for source runs and symlink-install.
+    return str(Path(__file__).with_name("excluded_boxes.xml"))
 
 
 class PointCloud(Node):
@@ -44,7 +65,7 @@ class PointCloud(Node):
         self.declare_parameter("cloud_topic_zed2", "/zed2/zed_node/point_cloud/cloud_registered")
         self.declare_parameter(
             "exclude_boxes_xml",
-            str(Path(__file__).with_name("excluded_boxes.xml")),
+            _default_exclude_boxes_xml(),
         )
 
         self._target_frame = str(self.get_parameter("target_frame").value)

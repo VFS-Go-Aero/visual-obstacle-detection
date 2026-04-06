@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added `launch_files/launch/single_zed.launch.py` for single-camera testing (zed1 only), enabling graceful operation when only one ZED camera is available.
+- Added XML-configurable exclusion boxes for merged cloud filtering in `visual_obstacle_detection/visual_obstacle_detection/point_cloud.py`, with a default `excluded_boxes.xml` in the same module directory; points inside configured axis-aligned boxes in `base_link` (or configured target frame) are excluded from `/merged_cloud` publication.
 
 ### Changed
 
