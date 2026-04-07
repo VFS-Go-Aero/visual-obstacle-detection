@@ -153,6 +153,11 @@ class ObstacleDetection(Node):
     # ── callbacks ─────────────────────────────────────────────────────────────
 
     def _health_check(self) -> None:
+        self.get_logger().warning(
+            "DIAG heartbeat "
+            f"rx={self._rx_count}, parsed_empty={self._empty_parse_count}, "
+            f"detect_empty={self._empty_detect_count}, zero_obs_streak={self._zero_obs_streak}"
+        )
         if self._rx_count == 0:
             self.get_logger().warning(
                 "No /merged_cloud messages received yet. "
@@ -161,6 +166,10 @@ class ObstacleDetection(Node):
 
     def _cb_merged(self, msg: PointCloud2) -> None:
         self._rx_count += 1
+        self.get_logger().warning(
+            "DIAG callback "
+            f"rx={self._rx_count}, frame={msg.header.frame_id}, size={msg.width}x{msg.height}"
+        )
         if self._rx_count <= 5 or self._rx_count % 30 == 0:
             self.get_logger().info(
                 "RX /merged_cloud "
