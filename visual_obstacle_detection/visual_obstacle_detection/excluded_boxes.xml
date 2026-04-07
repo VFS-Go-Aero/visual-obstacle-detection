@@ -1,82 +1,63 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <exclusion_boxes>
-
-  <!-- Central body and lower stack (rotationally symmetric) -->
   <box name="central_body">
     <min x="-0.275" y="-0.275" z="-0.15" />
     <max x="0.275" y="0.275" z="0.15" />
   </box>
-
   <box name="central_lower1">
-    <min x="-0.25" y="-0.2" z="-0.24" />
+    <min x="0.25" y="-0.2" z="-0.24" />
     <max x="0.25" y="0.2" z="-0.14" />
   </box>
-
   <box name="central_lower2">
-    <min x="-0.275" y="-0.225" z="-0.33" />
+    <min x="0.275" y="-0.225" z="-0.33" />
     <max x="0.275" y="0.225" z="-0.23" />
   </box>
-
   <box name="central_lower3">
-    <min x="-0.35" y="-0.25" z="-0.42" />
+    <min x="0.35" y="-0.25" z="-0.42" />
     <max x="0.35" y="0.25" z="-0.32" />
   </box>
-
   <box name="central_lower4">
-    <min x="-0.45" y="-0.35" z="-0.6" />
+    <min x="0.45" y="-0.35" z="-0.6" />
     <max x="0.45" y="0.35" z="-0.4" />
   </box>
-
-  <!-- Rotated +X side (originally +X before rotation) -->
-  <box name="side_small1_pos">
-    <min x="0.39" y="0.345" z="-0.115" />
-    <max x="0.59" y="0.545" z="0.085" />
+  <box name="side_small1_right">
+    <min x="0.59" y="0.345" z="-0.115" />
+    <max x="0.39" y="0.545" z="0.085" />
   </box>
-
-  <box name="side_small2_pos">
-    <min x="0.345" y="0.305" z="-0.085" />
-    <max x="0.455" y="0.415" z="0.025" />
+  <box name="side_small2_right">
+    <min x="0.455" y="0.305" z="-0.08" />
+    <max x="0.345" y="0.415" z="0.02" />
   </box>
-
-  <box name="side_small3_pos">
-    <min x="0.295" y="0.265" z="-0.085" />
-    <max x="0.405" y="0.375" z="0.025" />
+  <box name="side_small3_right">
+    <min x="0.405" y="0.265" z="-0.08" />
+    <max x="0.295" y="0.375" z="0.02" />
   </box>
-
-  <box name="side_small4_pos">
-    <min x="0.235" y="0.21" z="-0.085" />
-    <max x="0.345" y="0.32" z="0.025" />
+  <box name="side_small4_right">
+    <min x="0.345" y="0.21" z="-0.08" />
+    <max x="0.235" y="0.32" z="0.02" />
   </box>
-
-  <box name="side_plate_pos">
-    <min x="0.065" y="0.019" z="0.01" />
-    <max x="0.965" y="0.919" z="0.11" />
+  <box name="side_plate_right">
+    <min x="0.965" y="0.019" z="0.01" />
+    <max x="0.065" y="0.919" z="0.11" />
   </box>
-
-  <!-- Mirrored side (negative X after rotation) -->
-  <box name="side_small1_neg">
-    <min x="-0.59" y="0.345" z="-0.115" />
-    <max x="-0.39" y="0.545" z="0.085" />
+  <box name="side_small1_left">
+    <min x="0.59" y="-0.545" z="-0.115" />
+    <max x="0.39" y="-0.345" z="0.085" />
   </box>
-
-  <box name="side_small2_neg">
-    <min x="-0.455" y="0.305" z="-0.085" />
-    <max x="-0.345" y="0.415" z="0.025" />
+  <box name="side_small2_left">
+    <min x="0.455" y="-0.415" z="-0.08" />
+    <max x="0.345" y="-0.305" z="0.02" />
   </box>
-
-  <box name="side_small3_neg">
-    <min x="-0.405" y="0.265" z="-0.085" />
-    <max x="-0.295" y="0.375" z="0.025" />
+  <box name="side_small3_left">
+    <min x="0.405" y="-0.375" z="-0.08" />
+    <max x="0.295" y="-0.265" z="0.02" />
   </box>
-
-  <box name="side_small4_neg">
-    <min x="-0.345" y="0.21" z="-0.085" />
-    <max x="-0.235" y="0.32" z="0.025" />
+  <box name="side_small4_left">
+    <min x="0.345" y="-0.32" z="-0.08" />
+    <max x="0.235" y="-0.21" z="0.02" />
   </box>
-
-  <box name="side_plate_neg">
-    <min x="-0.965" y="0.019" z="0.01" />
-    <max x="-0.065" y="0.919" z="0.11" />
+  <box name="side_plate_left">
+    <min x="0.965" y="-0.919" z="0.01" />
+    <max x="0.065" y="-0.019" z="0.11" />
   </box>
-
 </exclusion_boxes>
