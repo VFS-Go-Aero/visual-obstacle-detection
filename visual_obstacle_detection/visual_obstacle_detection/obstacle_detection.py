@@ -101,6 +101,7 @@ class ObstacleDetection(Node):
         self._empty_parse_count = 0
         self._empty_detect_count = 0
         self._zero_obs_streak = 0
+        self._frame_mismatch_count = 0
         self._health_timer = self.create_timer(5.0, self._health_check)
 
         # publish only the obstacle-representative points (red)
@@ -181,8 +182,14 @@ class ObstacleDetection(Node):
                 f"row_step={msg.row_step}, is_dense={msg.is_dense}"
             )
 
-        if msg.header.frame_id:
-            self._frame_id = msg.header.frame_id
+        if msg.header.frame_id and msg.header.frame_id != self._frame_id:
+            self._frame_mismatch_count += 1
+            if self._frame_mismatch_count <= 10 or self._frame_mismatch_count % 20 == 0:
+                self.get_logger().warning(
+                    "Incoming /merged_cloud frame differs from publish frame "
+                    f"(incoming={msg.header.frame_id}, publish={self._frame_id}, "
+                    f"count={self._frame_mismatch_count})"
+                )
 
         self.cloud = self._parse(msg)
         if self.cloud.shape[0] == 0:
