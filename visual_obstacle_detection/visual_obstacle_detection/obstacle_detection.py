@@ -95,6 +95,11 @@ class ObstacleDetection(Node):
         super().__init__("obstacle_detection_segment")
         self._frame_id = "base_link"
         self.cloud = np.empty((0, 3), dtype=np.float32)
+        self._rx_count = 0
+        self._empty_parse_count = 0
+        self._empty_detect_count = 0
+        self._zero_obs_streak = 0
+        self._health_timer = self.create_timer(5.0, self._health_check)
 
         # publish only the obstacle-representative points (red)
         self.pub = self.create_publisher(
@@ -118,27 +123,76 @@ class ObstacleDetection(Node):
     # ── parsing ───────────────────────────────────────────────────────────────
 
     def _parse(self, msg: PointCloud2) -> np.ndarray:
-        structured = np.array(
-            list(pc2.read_points(msg, field_names=("x", "y", "z"), skip_nans=True))
-        )
+        try:
+            structured = np.array(
+                list(pc2.read_points(msg, field_names=("x", "y", "z"), skip_nans=True))
+            )
+        except Exception as exc:
+            self.get_logger().error(f"PointCloud parse failed: {exc}")
+            return np.empty((0, 3), dtype=np.float32)
+
         if structured.size == 0:
             return np.empty((0, 3), dtype=np.float32)
+
+        if structured.dtype.names is None:
+            # Some sensor_msgs_py versions return plain tuples instead of named fields.
+            arr = np.asarray(structured, dtype=np.float32)
+            if arr.ndim == 1:
+                arr = arr.reshape(1, -1)
+            if arr.shape[1] < 3:
+                self.get_logger().error(
+                    f"Unexpected parsed point shape={arr.shape}; expected (?, >=3)"
+                )
+                return np.empty((0, 3), dtype=np.float32)
+            return arr[:, :3]
+
         return np.column_stack(
             [structured["x"], structured["y"], structured["z"]]
         ).astype(np.float32)
 
     # ── callbacks ─────────────────────────────────────────────────────────────
 
+    def _health_check(self) -> None:
+        if self._rx_count == 0:
+            self.get_logger().warning(
+                "No /merged_cloud messages received yet. "
+                "Check topic name, publisher state, and QoS compatibility."
+            )
+
     def _cb_merged(self, msg: PointCloud2) -> None:
+        self._rx_count += 1
+        if self._rx_count <= 5 or self._rx_count % 30 == 0:
+            self.get_logger().info(
+                "RX /merged_cloud "
+                f"count={self._rx_count}, frame={msg.header.frame_id}, "
+                f"size={msg.width}x{msg.height}, point_step={msg.point_step}, "
+                f"row_step={msg.row_step}, is_dense={msg.is_dense}"
+            )
+
         if msg.header.frame_id:
             self._frame_id = msg.header.frame_id
+
         self.cloud = self._parse(msg)
+        if self.cloud.shape[0] == 0:
+            self._empty_parse_count += 1
+            if self._empty_parse_count <= 10 or self._empty_parse_count % 20 == 0:
+                self.get_logger().warning(
+                    "Parsed empty cloud from /merged_cloud "
+                    f"(count={self._empty_parse_count}, rx_count={self._rx_count})"
+                )
+
         self._detect_and_publish()
 
     # ── detection + publish ───────────────────────────────────────────────────
 
     def _detect_and_publish(self) -> None:
         if self.cloud.shape[0] == 0:
+            self._empty_detect_count += 1
+            if self._empty_detect_count <= 10 or self._empty_detect_count % 20 == 0:
+                self.get_logger().warning(
+                    "Skipping detect/publish because cloud is empty "
+                    f"(count={self._empty_detect_count})"
+                )
             return
 
         winner_mask, winner_sector = build_sector_map(self.cloud)
@@ -147,6 +201,23 @@ class ObstacleDetection(Node):
         obstacle_sectors = winner_sector[winner_mask]
 
         n_obs = obstacle_points.shape[0]
+
+        if n_obs == 0:
+            self._zero_obs_streak += 1
+            if self._zero_obs_streak <= 10 or self._zero_obs_streak % 20 == 0:
+                d = np.linalg.norm(self.cloud, axis=1)
+                self.get_logger().warning(
+                    "No obstacle representatives this frame "
+                    f"(streak={self._zero_obs_streak}, pts={self.cloud.shape[0]}, "
+                    f"dist_min={np.min(d):.3f}, dist_max={np.max(d):.3f}, "
+                    f"bin_w={DIST_BIN_W}, min_pts={MIN_POINTS}, sectors={N_AZ}x{N_EL})"
+                )
+        else:
+            if self._zero_obs_streak > 0:
+                self.get_logger().info(
+                    f"Obstacle detection recovered after {self._zero_obs_streak} empty frames"
+                )
+            self._zero_obs_streak = 0
 
         self.get_logger().info(
             f"Sector map: {n_obs} obstacle representatives "
