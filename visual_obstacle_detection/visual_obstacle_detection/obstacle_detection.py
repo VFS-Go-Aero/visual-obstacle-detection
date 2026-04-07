@@ -3,6 +3,7 @@
 import numpy as np
 
 import rclpy
+from rclpy.logging import LoggingSeverity
 from rclpy.node import Node
 
 from sensor_msgs.msg import PointCloud2, PointField
@@ -93,6 +94,7 @@ class ObstacleDetection(Node):
 
     def __init__(self) -> None:
         super().__init__("obstacle_detection_segment")
+        self.get_logger().set_level(LoggingSeverity.DEBUG)
         self._frame_id = "base_link"
         self.cloud = np.empty((0, 3), dtype=np.float32)
         self._rx_count = 0
@@ -119,6 +121,7 @@ class ObstacleDetection(Node):
             f"Obstacle detection started  "
             f"[{N_AZ}×{N_EL} sectors, bin_w={DIST_BIN_W}m, min_pts={MIN_POINTS}]"
         )
+        self.get_logger().info("Logger level forced to DEBUG in code")
 
     # ── parsing ───────────────────────────────────────────────────────────────
 
