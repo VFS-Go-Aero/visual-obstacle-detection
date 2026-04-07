@@ -91,6 +91,17 @@ class PointCloud(Node):
         # Merged cloud from both cameras — always up to date.
         self.cloud = np.empty((0, 3), dtype=np.float32)
         self._exclude_boxes = self._load_exclude_boxes(self._exclude_boxes_xml)
+        self._exclude_box_names = [box[0] for box in self._exclude_boxes]
+
+        # Exclusion diagnostics state.
+        self._last_raw_pts = 0
+        self._last_merged_pts = 0
+        self._last_excluded_pts = 0
+        self._last_raw_bounds: tuple[np.ndarray, np.ndarray] | None = None
+        self._last_filtered_bounds: tuple[np.ndarray, np.ndarray] | None = None
+        self._last_box_hits = np.zeros(len(self._exclude_boxes), dtype=np.int64)
+        self._zero_exclusion_streak = 0
+        self._all_excluded_streak = 0
 
         # Explicit subscriptions — no loop, no dictionary.
         self._sub_zed1 = self.create_subscription(
@@ -115,10 +126,18 @@ class PointCloud(Node):
             f"tf_timeout={tf_timeout_s:.3f}s, "
             f"topic_zed1={self._topic_zed1}, "
             f"topic_zed2={self._topic_zed2}, "
-            f"exclude_boxes={len(self._exclude_boxes)}]"
+            f"exclude_boxes={len(self._exclude_boxes)}, "
+            f"exclude_boxes_xml={self._exclude_boxes_xml}]"
         )
+        if self._exclude_boxes:
+            for name, lo, hi in self._exclude_boxes:
+                self.get_logger().info(
+                    "exclude_box "
+                    f"name={name}, min=({lo[0]:.3f}, {lo[1]:.3f}, {lo[2]:.3f}), "
+                    f"max=({hi[0]:.3f}, {hi[1]:.3f}, {hi[2]:.3f})"
+                )
 
-    def _load_exclude_boxes(self, xml_path: str) -> list[tuple[np.ndarray, np.ndarray]]:
+    def _load_exclude_boxes(self, xml_path: str) -> list[tuple[str, np.ndarray, np.ndarray]]:
         """
         Load axis-aligned exclusion boxes from XML in target_frame coordinates.
 
@@ -145,7 +164,7 @@ class PointCloud(Node):
             )
             return []
 
-        boxes: list[tuple[np.ndarray, np.ndarray]] = []
+        boxes: list[tuple[str, np.ndarray, np.ndarray]] = []
         for idx, box in enumerate(root.findall("box"), start=1):
             min_node = box.find("min")
             max_node = box.find("max")
@@ -180,7 +199,8 @@ class PointCloud(Node):
 
             lo = np.minimum(min_corner, max_corner)
             hi = np.maximum(min_corner, max_corner)
-            boxes.append((lo, hi))
+            name = box.attrib.get("name", f"box_{idx}")
+            boxes.append((name, lo, hi))
 
         self.get_logger().info(
             f"Loaded {len(boxes)} exclusion boxes from {xml_path} in frame {self._target_frame}"
@@ -190,13 +210,27 @@ class PointCloud(Node):
     def _apply_exclude_boxes(self, points: np.ndarray) -> np.ndarray:
         """Remove points that fall inside any configured exclusion box."""
         if points.size == 0 or not self._exclude_boxes:
+            self._last_box_hits = np.zeros(len(self._exclude_boxes), dtype=np.int64)
             return points
 
         keep_mask = np.ones(points.shape[0], dtype=bool)
-        for lo, hi in self._exclude_boxes:
+        box_hits = np.zeros(len(self._exclude_boxes), dtype=np.int64)
+        for idx, (_name, lo, hi) in enumerate(self._exclude_boxes):
             inside = np.all((points >= lo) & (points <= hi), axis=1)
+            box_hits[idx] = int(np.count_nonzero(inside))
             keep_mask &= ~inside
+        self._last_box_hits = box_hits
         return points[keep_mask]
+
+    def _bounds_str(self, bounds: tuple[np.ndarray, np.ndarray] | None) -> str:
+        """Format cloud bounds for diagnostics."""
+        if bounds is None:
+            return "n/a"
+        lo, hi = bounds
+        return (
+            f"min=({lo[0]:.3f}, {lo[1]:.3f}, {lo[2]:.3f}), "
+            f"max=({hi[0]:.3f}, {hi[1]:.3f}, {hi[2]:.3f})"
+        )
 
     def _parse(self, msg: PointCloud2) -> np.ndarray:
         """
@@ -229,7 +263,36 @@ class PointCloud(Node):
     def _merge(self) -> None:
         """Concatenate the two camera clouds and publish on /merged_cloud."""
         merged = np.concatenate((self._cloud1, self._cloud2), axis=0)
+        self._last_raw_pts = int(merged.shape[0])
+        if self._last_raw_pts > 0:
+            self._last_raw_bounds = (
+                merged.min(axis=0),
+                merged.max(axis=0),
+            )
+        else:
+            self._last_raw_bounds = None
+
         self.cloud = self._apply_exclude_boxes(merged)
+        self._last_merged_pts = int(self.cloud.shape[0])
+        self._last_excluded_pts = self._last_raw_pts - self._last_merged_pts
+        if self._last_merged_pts > 0:
+            self._last_filtered_bounds = (
+                self.cloud.min(axis=0),
+                self.cloud.max(axis=0),
+            )
+        else:
+            self._last_filtered_bounds = None
+
+        if self._last_raw_pts > 0 and self._last_excluded_pts == 0 and self._exclude_boxes:
+            self._zero_exclusion_streak += 1
+        else:
+            self._zero_exclusion_streak = 0
+
+        if self._last_raw_pts > 0 and self._last_merged_pts == 0 and self._exclude_boxes:
+            self._all_excluded_streak += 1
+        else:
+            self._all_excluded_streak = 0
+
         self.get_logger().info(f"merged cloud: {self.cloud.shape[0]} pts")
         header = std_msg.Header()
         header.stamp = self.get_clock().now().to_msg()
@@ -283,8 +346,48 @@ class PointCloud(Node):
         self.get_logger().info(
             f"status: zed1_msgs={self._msgs_zed1}, zed2_msgs={self._msgs_zed2}, "
             f"tf_fail_zed1={self._tf_fail_zed1}, tf_fail_zed2={self._tf_fail_zed2}, "
-            f"merged_pts={self.cloud.shape[0]}"
+            f"raw_pts={self._last_raw_pts}, merged_pts={self._last_merged_pts}, "
+            f"excluded_pts={self._last_excluded_pts}, exclude_boxes={len(self._exclude_boxes)}"
         )
+
+        if self._last_raw_pts > 0 and self._exclude_boxes:
+            ratio = self._last_excluded_pts / self._last_raw_pts
+            self.get_logger().info(
+                f"exclusion_ratio={ratio:.4f}, "
+                f"raw_bounds={self._bounds_str(self._last_raw_bounds)}, "
+                f"filtered_bounds={self._bounds_str(self._last_filtered_bounds)}"
+            )
+
+            if self._last_box_hits.size > 0:
+                non_zero_idx = np.flatnonzero(self._last_box_hits)
+                if non_zero_idx.size == 0:
+                    self.get_logger().warning(
+                        "No points intersect any exclusion box this cycle"
+                    )
+                else:
+                    top_idx = sorted(
+                        non_zero_idx.tolist(),
+                        key=lambda i: int(self._last_box_hits[i]),
+                        reverse=True,
+                    )[:5]
+                    summary = ", ".join(
+                        f"{self._exclude_box_names[i]}:{int(self._last_box_hits[i])}"
+                        for i in top_idx
+                    )
+                    self.get_logger().info(f"top_box_hits={summary}")
+
+            if self._zero_exclusion_streak >= 3:
+                self.get_logger().warning(
+                    "Exclusion appears inactive: raw cloud has points but none are filtered. "
+                    "Likely causes: wrong XML file path, box ranges not overlapping the cloud, "
+                    "or frame mismatch between boxes and transformed cloud."
+                )
+
+            if self._all_excluded_streak >= 2:
+                self.get_logger().warning(
+                    "All points are being excluded repeatedly. "
+                    "Likely causes: exclusion boxes too large or wrongly placed."
+                )
 
 
 def main() -> None:
