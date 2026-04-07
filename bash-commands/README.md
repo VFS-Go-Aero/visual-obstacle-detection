@@ -1,5 +1,10 @@
 # bash-commands
 
+## Tegrastats Logger
+```bash
+tegrastats --interval 1000 --logfile ~/Desktop/tegrastats_$(date +"%Y%m%d_%H%M%S").log
+```
+
 ## Downwards Rangefinder
 
 ```bash
