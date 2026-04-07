@@ -300,6 +300,52 @@ class PointCloud(Node):
         msg = point_cloud2.create_cloud_xyz32(header, self.cloud.tolist())
         self._merged_pub.publish(msg)
 
+        self.get_logger().info(
+            f"publish stats: zed1_msgs={self._msgs_zed1}, zed2_msgs={self._msgs_zed2}, "
+            f"tf_fail_zed1={self._tf_fail_zed1}, tf_fail_zed2={self._tf_fail_zed2}, "
+            f"raw_pts={self._last_raw_pts}, merged_pts={self._last_merged_pts}, "
+            f"excluded_pts={self._last_excluded_pts}, exclude_boxes={len(self._exclude_boxes)}"
+        )
+
+        if self._last_raw_pts > 0 and self._exclude_boxes:
+            ratio = self._last_excluded_pts / self._last_raw_pts
+            self.get_logger().info(
+                f"publish exclusion: ratio={ratio:.4f}, "
+                f"raw_bounds={self._bounds_str(self._last_raw_bounds)}, "
+                f"filtered_bounds={self._bounds_str(self._last_filtered_bounds)}"
+            )
+
+            if self._last_box_hits.size > 0:
+                non_zero_idx = np.flatnonzero(self._last_box_hits)
+                if non_zero_idx.size == 0:
+                    self.get_logger().warning(
+                        "publish exclusion: no points intersect any exclusion box"
+                    )
+                else:
+                    top_idx = sorted(
+                        non_zero_idx.tolist(),
+                        key=lambda i: int(self._last_box_hits[i]),
+                        reverse=True,
+                    )[:5]
+                    summary = ", ".join(
+                        f"{self._exclude_box_names[i]}:{int(self._last_box_hits[i])}"
+                        for i in top_idx
+                    )
+                    self.get_logger().info(f"publish exclusion: top_box_hits={summary}")
+
+            if self._zero_exclusion_streak >= 3:
+                self.get_logger().warning(
+                    "publish exclusion appears inactive: raw cloud has points but none are "
+                    "filtered. Likely causes: wrong XML file path, box ranges not overlapping "
+                    "the cloud, or frame mismatch between boxes and transformed cloud."
+                )
+
+            if self._all_excluded_streak >= 2:
+                self.get_logger().warning(
+                    "publish exclusion is removing all points repeatedly. "
+                    "Likely causes: exclusion boxes too large or wrongly placed."
+                )
+
     def _transform_cloud(self, msg: PointCloud2) -> np.ndarray:
         """Transform a PointCloud2 into the configured target frame and parse xyz."""
         if msg.header.frame_id == self._target_frame:
@@ -336,58 +382,11 @@ class PointCloud(Node):
         self._merge()
 
     def _status_tick(self) -> None:
-        """Periodic diagnostics to show whether inputs and TF are healthy."""
+        """Warn periodically only while waiting for first camera messages."""
         if self._msgs_zed1 == 0 and self._msgs_zed2 == 0:
             self.get_logger().warning(
                 f"Waiting for camera clouds on {self._topic_zed1} and {self._topic_zed2}"
             )
-            return
-
-        self.get_logger().info(
-            f"status: zed1_msgs={self._msgs_zed1}, zed2_msgs={self._msgs_zed2}, "
-            f"tf_fail_zed1={self._tf_fail_zed1}, tf_fail_zed2={self._tf_fail_zed2}, "
-            f"raw_pts={self._last_raw_pts}, merged_pts={self._last_merged_pts}, "
-            f"excluded_pts={self._last_excluded_pts}, exclude_boxes={len(self._exclude_boxes)}"
-        )
-
-        if self._last_raw_pts > 0 and self._exclude_boxes:
-            ratio = self._last_excluded_pts / self._last_raw_pts
-            self.get_logger().info(
-                f"exclusion_ratio={ratio:.4f}, "
-                f"raw_bounds={self._bounds_str(self._last_raw_bounds)}, "
-                f"filtered_bounds={self._bounds_str(self._last_filtered_bounds)}"
-            )
-
-            if self._last_box_hits.size > 0:
-                non_zero_idx = np.flatnonzero(self._last_box_hits)
-                if non_zero_idx.size == 0:
-                    self.get_logger().warning(
-                        "No points intersect any exclusion box this cycle"
-                    )
-                else:
-                    top_idx = sorted(
-                        non_zero_idx.tolist(),
-                        key=lambda i: int(self._last_box_hits[i]),
-                        reverse=True,
-                    )[:5]
-                    summary = ", ".join(
-                        f"{self._exclude_box_names[i]}:{int(self._last_box_hits[i])}"
-                        for i in top_idx
-                    )
-                    self.get_logger().info(f"top_box_hits={summary}")
-
-            if self._zero_exclusion_streak >= 3:
-                self.get_logger().warning(
-                    "Exclusion appears inactive: raw cloud has points but none are filtered. "
-                    "Likely causes: wrong XML file path, box ranges not overlapping the cloud, "
-                    "or frame mismatch between boxes and transformed cloud."
-                )
-
-            if self._all_excluded_streak >= 2:
-                self.get_logger().warning(
-                    "All points are being excluded repeatedly. "
-                    "Likely causes: exclusion boxes too large or wrongly placed."
-                )
 
 
 def main() -> None:
