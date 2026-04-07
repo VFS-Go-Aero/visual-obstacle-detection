@@ -49,8 +49,8 @@ def generate_launch_description():
         executable="static_transform_publisher",
         name="base_to_zed1_tf",
         arguments=[
-            "0.0", "0.0", "0.0",
-            "0.0", "0.0", "0.0",
+            "0.1524", "0.0", "-0.127",
+            "0.0", "0.0", "3.14159",
             "base_link",
             "zed1_camera_link",
         ],
@@ -61,8 +61,8 @@ def generate_launch_description():
         executable="static_transform_publisher",
         name="base_to_zed2_tf",
         arguments=[
-            "0.0", "-0.31", "0.0",
-            "0.0", "0.0", "0.0",
+            "0.1524", "0.0", "-0.127",
+            "0.0", "0.0", "3.14159",
             "base_link",
             "zed2_camera_link",
         ],

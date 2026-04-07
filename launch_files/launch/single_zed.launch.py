@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Launch two ZED cameras with explicit static transforms from base_link."""
+"""Launch a single ZED camera (zed1) with explicit static transform from base_link."""
 
 import os
 
@@ -11,7 +11,7 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
-    """Build a launch description for dual ZED setup with explicit TF ownership."""
+    """Build a launch description for single ZED setup with explicit TF ownership."""
     zed_launch = os.path.join(
         get_package_share_directory("zed_wrapper"),
         "launch",
@@ -21,7 +21,7 @@ def generate_launch_description():
     zed1 = IncludeLaunchDescription(
         launch_description_source=PythonLaunchDescriptionSource(zed_launch),
         launch_arguments={
-            "camera_name": "zed",
+            "camera_name": "zed1",
             "camera_model": "zedx",
             "serial_number": "44659546",
             "publish_tf": "false",
@@ -30,15 +30,15 @@ def generate_launch_description():
         }.items(),
     )
 
-    # Static extrinsics from drone body frame to each camera root frame.
+    # Static extrinsics from drone body frame to camera root frame.
     # Update these values after camera calibration.
     base_to_zed1 = Node(
         package="tf2_ros",
         executable="static_transform_publisher",
         name="base_to_zed1_tf",
         arguments=[
-            "15.0", "0.0", "-8.0",
-            "0.0", "0.0", "0.0",
+            "0.1524", "0.0", "-0.127",
+            "0.0", "0.0", "3.14159",
             "base_link",
             "zed1_camera_link",
         ],
