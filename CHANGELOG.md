@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-04-10
+
 ### Added
 
 - Added `launch_files/launch/single_zed.launch.py` for single-camera testing (zed1 only), enabling graceful operation when only one ZED camera is available.
@@ -238,7 +240,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated ZED2 transform parameters to zero.
 - Updated static transform publisher arguments for clarity.
 
-[Unreleased]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.8.1...v0.9.0
 [0.8.0]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.6.0...v0.7.0
