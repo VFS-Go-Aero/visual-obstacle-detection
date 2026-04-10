@@ -11,9 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added `launch_files/launch/single_zed.launch.py` for single-camera testing (zed1 only), enabling graceful operation when only one ZED camera is available.
 - Added XML-configurable exclusion boxes for merged cloud filtering in `visual_obstacle_detection/visual_obstacle_detection/point_cloud.py`, with a default `excluded_boxes.xml` in the same module directory; points inside configured axis-aligned boxes in `base_link` (or configured target frame) are excluded from `/merged_cloud` publication.
+- Added `visual_obstacle_detection/launch/visual_obstacle_detection.launch.py` to launch the full visual obstacle detection pipeline.
 
 ### Changed
 
+- Updated package dependency metadata in `visual_obstacle_detection/package.xml`.
 - Updated `visual_obstacle_detection/visual_obstacle_detection/obstacle_to_mavlink.py` to convert obstacle point coordinates from the node's incoming body-centered RFU convention (`x=right, y=forward, z=up`) into MAVLink body FRD (`x=forward, y=right, z=down`) before publishing `ObstacleDistance3D.position`.
 - Updated `visual_obstacle_detection/visual_obstacle_detection/obstacle_to_mavlink.py` to publish `ObstacleDistance3D.frame` as explicit `MAV_FRAME_BODY_FRD` (`12`) instead of `0` (MAVROS default frame), ensuring body-relative obstacle data for ArduPilot.
 - Added `launch_files/launch/single_zed.launch.py` single ZED launch file with static transform support from `base_link` to set camera link, intended for use in single-camera drone.
