@@ -94,7 +94,10 @@ class ObstacleDetection(Node):
 
     def __init__(self) -> None:
         super().__init__("obstacle_detection_segment")
-        self.get_logger().set_level(LoggingSeverity.DEBUG)
+        self._verbose = self.declare_parameter("verbose", True).value
+
+        level = LoggingSeverity.DEBUG if self._verbose else LoggingSeverity.INFO
+        self.get_logger().set_level(level)
         self._frame_id = "base_link"
         self.cloud = np.empty((0, 3), dtype=np.float32)
         self._rx_count = 0
@@ -102,6 +105,7 @@ class ObstacleDetection(Node):
         self._empty_detect_count = 0
         self._zero_obs_streak = 0
         self._frame_mismatch_count = 0
+        self._last_n_obs = None
         self._health_timer = self.create_timer(5.0, self._health_check)
 
         # publish only the obstacle-representative points (red)
@@ -122,7 +126,8 @@ class ObstacleDetection(Node):
             f"Obstacle detection started  "
             f"[{N_AZ}×{N_EL} sectors, bin_w={DIST_BIN_W}m, min_pts={MIN_POINTS}]"
         )
-        self.get_logger().info("Logger level forced to DEBUG in code")
+        if self._verbose:
+            self.get_logger().debug("Logger level forced to DEBUG in code")
 
     # ── parsing ───────────────────────────────────────────────────────────────
 
@@ -157,7 +162,7 @@ class ObstacleDetection(Node):
     # ── callbacks ─────────────────────────────────────────────────────────────
 
     def _health_check(self) -> None:
-        self.get_logger().warning(
+        self.get_logger().debug(
             "DIAG heartbeat "
             f"rx={self._rx_count}, parsed_empty={self._empty_parse_count}, "
             f"detect_empty={self._empty_detect_count}, zero_obs_streak={self._zero_obs_streak}"
@@ -170,12 +175,12 @@ class ObstacleDetection(Node):
 
     def _cb_merged(self, msg: PointCloud2) -> None:
         self._rx_count += 1
-        self.get_logger().warning(
+        self.get_logger().debug(
             "DIAG callback "
             f"rx={self._rx_count}, frame={msg.header.frame_id}, size={msg.width}x{msg.height}"
         )
-        if self._rx_count <= 5 or self._rx_count % 30 == 0:
-            self.get_logger().info(
+        if self._verbose and (self._rx_count <= 5 or self._rx_count % 30 == 0):
+            self.get_logger().debug(
                 "RX /merged_cloud "
                 f"count={self._rx_count}, frame={msg.header.frame_id}, "
                 f"size={msg.width}x{msg.height}, point_step={msg.point_step}, "
@@ -233,15 +238,27 @@ class ObstacleDetection(Node):
                 )
         else:
             if self._zero_obs_streak > 0:
-                self.get_logger().info(
-                    f"Obstacle detection recovered after {self._zero_obs_streak} empty frames"
-                )
+                if self._verbose:
+                    self.get_logger().info(
+                        f"Obstacle detection recovered after {self._zero_obs_streak} empty frames"
+                    )
+                else:
+                    self.get_logger().debug(
+                        f"Obstacle detection recovered after {self._zero_obs_streak} empty frames"
+                    )
             self._zero_obs_streak = 0
 
-        self.get_logger().info(
-            f"Sector map: {n_obs} obstacle representatives "
-            f"from {self.cloud.shape[0]} total points"
-        )
+            if self._verbose:
+                self.get_logger().info(
+                    f"Sector map: {n_obs} obstacle representatives "
+                    f"from {self.cloud.shape[0]} total points"
+                )
+            elif self._last_n_obs is None or self._last_n_obs != n_obs:
+                self.get_logger().info(
+                    f"Detected {n_obs} obstacle representatives from {self.cloud.shape[0]} points"
+                )
+
+        self._last_n_obs = n_obs
 
         obstacle_points_with_ids = [
             [p[0], p[1], p[2], int(s)] for p, s in zip(obstacle_points, obstacle_sectors)
