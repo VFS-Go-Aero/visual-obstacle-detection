@@ -1,3 +1,5 @@
+import os
+from glob import glob
 from setuptools import setup
 
 package_name = "visual_obstacle_detection"
@@ -11,6 +13,7 @@ setup(
         (
             "share/" + package_name,
             ["package.xml", "visual_obstacle_detection/excluded_boxes.xml"],
+            (os.path.join("share", package_name, "launch"), glob("launch/*.py")),
         ),
     ],
     install_requires=["setuptools"],
