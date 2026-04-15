@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.1] - 2026-04-15
+
+### Added
+- Added `visual_obstacle_detection/launch/visual_obstacle_detection.launch.py` to launch the full visual obstacle detection pipeline without needing individual launches for each package.
+
+### Changed
+- Updated package dependency metadata in `visual_obstacle_detection/package.xml`.
+
 ## [0.10.0] - 2026-04-10
 
 ### Added
@@ -240,7 +248,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated ZED2 transform parameters to zero.
 - Updated static transform publisher arguments for clarity.
 
-[Unreleased]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.10.0...HEAD
+[Unreleased]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.10.1...HEAD
+[0.10.1]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.10.0...v0.10.1
 [0.10.0]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.8.1...v0.9.0
 [0.8.0]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.7.0...v0.8.0
