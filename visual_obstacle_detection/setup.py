@@ -17,7 +17,6 @@ setup(
     zip_safe=True,
     maintainer="Vertical Flight Systems Purdue",
     maintainer_email="vfspurdue@gmail.com",
-    maintainer_url="https://vfspurdue.com",
     description="Visual Obstacle Detection package",
     license="MIT",
     tests_require=["pytest"],
