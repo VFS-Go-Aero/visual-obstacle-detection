@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Added `visual_obstacle_detection/launch/visual_obstacle_detection.launch.py` to launch the full visual obstacle detection pipeline without needing individual launches for each package.
+
+### Changed
+- Updated package dependency metadata in `visual_obstacle_detection/package.xml`.
+
 ## [0.10.0] - 2026-04-10
 
 ### Added
