@@ -8,7 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Added `scripts/launch_all.sh` to launch MAVROS, the multi-ZED setup, and the visual obstacle detection pipeline together.
+- Added `launch_files/launch/launch_all.launch.py` to launch MAVROS, the multi-ZED setup, and the visual obstacle detection pipeline together.
+- Added `scripts/launch.sh` shell helper to start the full system with optional ROS logging enabled.
 
 ### Changed
 - Updated `launch_files/launch/multi_zed.launch.py` and `launch_files/launch/single_zed.launch.py` to use `info` logging level for ZED driver launches and static transform publishers.
