@@ -27,7 +27,7 @@ def generate_launch_description():
             "publish_tf": "false",
             "publish_map_tf": "false",
             "pub_frame_rate": "15.0",
-            "param_overrides": "debug.sdk_verbose:=0;debug.debug_common:=false;debug.debug_dyn_params:=false;debug.debug_grab:=false;debug.debug_sim:=false;debug.debug_video_depth:=false;debug.debug_camera_controls:=false;debug.debug_point_cloud:=false;debug.debug_tf:=false;debug.debug_positional_tracking:=false;debug.debug_gnss:=false;debug.debug_sensors:=false;debug.debug_mapping:=false;debug.debug_terrain_mapping:=false;debug.debug_object_detection:=false;debug.debug_body_tracking:=false;debug.debug_roi:=false;debug.debug_streaming:=false;debug.debug_advanced:=false;debug.debug_nitros:=false",
+            "param_overrides": "debug.sdk_verbose:=0;debug.debug_common:=false",
         }.items(),
     )
 
@@ -40,7 +40,7 @@ def generate_launch_description():
             "publish_tf": "false",
             "publish_map_tf": "false",
             "pub_frame_rate": "15.0",
-            "param_overrides": "debug.sdk_verbose:=0;debug.debug_common:=false;debug.debug_dyn_params:=false;debug.debug_grab:=false;debug.debug_sim:=false;debug.debug_video_depth:=false;debug.debug_camera_controls:=false;debug.debug_point_cloud:=false;debug.debug_tf:=false;debug.debug_positional_tracking:=false;debug.debug_gnss:=false;debug.debug_sensors:=false;debug.debug_mapping:=false;debug.debug_terrain_mapping:=false;debug.debug_object_detection:=false;debug.debug_body_tracking:=false;debug.debug_roi:=false;debug.debug_streaming:=false;debug.debug_advanced:=false;debug.debug_nitros:=false",
+            "param_overrides": "debug.sdk_verbose:=0;debug.debug_common:=false",
         }.items(),
     )
 
