@@ -8,11 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Added `v` launch argument to `visual_obstacle_detection/launch/visual_obstacle_detection.launch.py` to enable verbose obstacle detection logging via `v:=true`.
 - Added `scripts/launch_all.sh` to launch MAVROS, the multi-ZED setup, and the visual obstacle detection pipeline together.
 
 ### Changed
 - Updated `launch_files/launch/multi_zed.launch.py` and `launch_files/launch/single_zed.launch.py` to use `info` logging level for ZED driver launches and static transform publishers.
+
+## [0.10.3] - 2026-04-18
+
+### Added
+- Added `v` launch argument to `visual_obstacle_detection/launch/visual_obstacle_detection.launch.py` to enable verbose obstacle detection logging via `v:=true`.
 
 ## [0.10.2] - 2026-04-18
 
@@ -260,7 +264,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated ZED2 transform parameters to zero.
 - Updated static transform publisher arguments for clarity.
 
-[Unreleased]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.10.2...HEAD
+[Unreleased]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.10.3...HEAD
+[0.10.3]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.10.2...v0.10.3
 [0.10.2]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.10.1...v0.10.2
 [0.10.1]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.10.0...v0.10.1
 [0.10.0]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.9.0...v0.10.0
