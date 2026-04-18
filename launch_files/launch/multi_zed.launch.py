@@ -55,8 +55,6 @@ def generate_launch_description():
             "0.0", "0.0", "0.0",
             "base_link",
             "zed1_camera_link",
-            "--ros-args",
-            "--log-level", "info",
         ],
     )
 
@@ -69,8 +67,6 @@ def generate_launch_description():
             "0.0", "0.0", "0.0",
             "base_link",
             "zed2_camera_link",
-            "--ros-args",
-            "--log-level", "info",
         ],
     )
 
