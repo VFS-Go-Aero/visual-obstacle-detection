@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Updated `launch_files/launch/multi_zed.launch.py` to correct static extrinsic rotations for `zed1_camera_link` and `zed2_camera_link` relative to `base_link` to no rotation.
+
 ## [0.10.1] - 2026-04-15
 
 ### Added
