@@ -27,6 +27,7 @@ def generate_launch_description():
             "publish_tf": "false",
             "publish_map_tf": "false",
             "pub_frame_rate": "15.0",
+            "log_level": "info",
         }.items(),
     )
 
@@ -39,6 +40,7 @@ def generate_launch_description():
             "publish_tf": "false",
             "publish_map_tf": "false",
             "pub_frame_rate": "15.0",
+            "log_level": "info",
         }.items(),
     )
 
@@ -53,6 +55,8 @@ def generate_launch_description():
             "0.0", "0.0", "0.0",
             "base_link",
             "zed1_camera_link",
+            "--ros-args",
+            "--log-level", "info",
         ],
     )
 
@@ -65,6 +69,8 @@ def generate_launch_description():
             "0.0", "0.0", "0.0",
             "base_link",
             "zed2_camera_link",
+            "--ros-args",
+            "--log-level", "info",
         ],
     )
 
