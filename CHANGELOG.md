@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `v` launch argument to `visual_obstacle_detection/launch/visual_obstacle_detection.launch.py` to enable verbose obstacle detection logging via `v:=true`.
 
 ### Changed
-- Updated `launch_files/launch/multi_zed.launch.py` and `launch_files/launch/single_zed.launch.py` to use ZED wrapper `param_overrides` and ROS node log-level settings to reduce debug output from the camera wrapper and static transform publishers.
+- Updated `launch_files/launch/multi_zed.launch.py` and `launch_files/launch/single_zed.launch.py` to use `info` logging level for ZED driver launches and static transform publishers.
 
 ## [0.10.2] - 2026-04-18
 
