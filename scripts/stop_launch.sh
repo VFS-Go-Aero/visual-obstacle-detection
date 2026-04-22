@@ -22,6 +22,15 @@ fi
 echo "Stopping launch subprocesses: ${pids[*]}"
 for pid in "${pids[@]}"; do
     if kill -0 "$pid" 2>/dev/null; then
+        echo "Sending SIGINT to process $pid"
+        kill -INT "$pid" || true
+    fi
+done
+
+sleep 2
+for pid in "${pids[@]}"; do
+    if kill -0 "$pid" 2>/dev/null; then
+        echo "Process $pid still alive; sending SIGTERM"
         kill "$pid" || true
     fi
 done
