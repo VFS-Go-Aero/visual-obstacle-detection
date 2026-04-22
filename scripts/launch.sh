@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
+PID_FILE="$(cd "$(dirname "$0")" && pwd)/launch.pids"
 ENABLE_LOGGING=true
 
 while [ $# -gt 0 ]; do
@@ -42,14 +43,18 @@ cleanup() {
             kill "$pid" || true
         fi
     done
+    rm -f "$PID_FILE"
 }
 trap cleanup EXIT INT TERM
 
+rm -f "$PID_FILE"
 for cmd in "${commands[@]}"; do
     echo "Starting subprocess: $cmd"
     bash -lc "$cmd" &
     pids+=("$!")
 done
+
+printf "%s\n" "${pids[@]}" > "$PID_FILE"
 
 exit_code=0
 for pid in "${pids[@]}"; do
