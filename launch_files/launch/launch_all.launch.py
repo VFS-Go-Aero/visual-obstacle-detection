@@ -7,10 +7,13 @@ from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 try:
+    from launch.launch_description_sources import AnyLaunchDescriptionSource
+except ImportError:
+    AnyLaunchDescriptionSource = None
+try:
     from launch.launch_description_sources import XMLLaunchDescriptionSource
 except ImportError:
-    # Some ROS 2 installs expose XMLLaunchDescriptionSource in the submodule path.
-    from launch.launch_description_sources.launch_description_sources import XMLLaunchDescriptionSource
+    XMLLaunchDescriptionSource = None
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
@@ -28,7 +31,13 @@ def _find_launch_file(package_name: str, base_name: str) -> str:
 def _source_for_launch_file(path: str):
     if path.endswith(".py"):
         return PythonLaunchDescriptionSource(path)
-    return XMLLaunchDescriptionSource(path)
+    if AnyLaunchDescriptionSource is not None:
+        return AnyLaunchDescriptionSource(path)
+    if XMLLaunchDescriptionSource is not None:
+        return XMLLaunchDescriptionSource(path)
+    raise ImportError(
+        "No compatible launch description source available for non-Python launch files."
+    )
 
 
 def generate_launch_description() -> LaunchDescription:
