@@ -39,8 +39,8 @@ pids=()
 cleanup() {
     echo "Shutting down subprocesses..."
     for pid in "${pids[@]:-}"; do
-        if kill -0 "$pid" 2>/dev/null; then
-            kill "$pid" || true
+        if kill -0 -"$pid" 2>/dev/null; then
+            kill -TERM -"$pid" || true
         fi
     done
     rm -f "$PID_FILE"
@@ -50,7 +50,7 @@ trap cleanup EXIT INT TERM
 rm -f "$PID_FILE"
 for cmd in "${commands[@]}"; do
     echo "Starting subprocess: $cmd"
-    bash -lc "$cmd" &
+    setsid bash -lc "$cmd" &
     pids+=("$!")
 done
 
