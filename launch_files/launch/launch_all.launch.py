@@ -5,7 +5,12 @@ from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
 from launch.conditions import IfCondition
-from launch.launch_description_sources import PythonLaunchDescriptionSource, XMLLaunchDescriptionSource
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+try:
+    from launch.launch_description_sources import XMLLaunchDescriptionSource
+except ImportError:
+    # Some ROS 2 installs expose XMLLaunchDescriptionSource in the submodule path.
+    from launch.launch_description_sources.launch_description_sources import XMLLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
