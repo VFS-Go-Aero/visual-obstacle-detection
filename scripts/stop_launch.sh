@@ -27,7 +27,7 @@ for pid in "${pids[@]}"; do
     fi
 done
 
-sleep 2
+sleep 10
 for pid in "${pids[@]}"; do
     if kill -0 -"$pid" 2>/dev/null; then
         echo "Process group $pid still alive; sending SIGTERM"
