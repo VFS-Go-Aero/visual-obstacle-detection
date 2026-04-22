@@ -2,7 +2,6 @@
 set -e
 
 ENABLE_LOGGING=true
-LOG_ARGS=()
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -11,13 +10,13 @@ while [ $# -gt 0 ]; do
             shift
             ;;
         -h|--help)
-            cat <<'EOF'
+            cat <<'HELP'
 Usage: launch.sh [--logging=true|false] [-h|--help]
 
   --logging=true   enable ROS-level debug logging
   --logging=false  disable ROS-level debug logging (default)
   -h, --help       show this help message
-EOF
+HELP
             exit 0
             ;;
         *)
@@ -27,10 +26,36 @@ EOF
     esac
 done
 
+commands=()
 if [ "$ENABLE_LOGGING" = "true" ]; then
-    ros2 run latency_logger monitor_launcher
+    commands+=("ros2 run latency_logger monitor_launcher")
 fi
+commands+=("ros2 launch mavros apm.launch fcu_url:=/dev/ttyACM0:115200")
+commands+=("ros2 launch launch_files multi_zed.launch.py")
+commands+=("ros2 launch visual_obstacle_detection visual_obstacle_detection.launch.py")
 
-ros2 launch mavros apm.launch fcu_url:=/dev/ttyACM0:115200
-ros2 launch launch_files multi_zed.launch.py
-ros2 launch visual_obstacle_detection visual_obstacle_detection.launch.py
+pids=()
+cleanup() {
+    echo "Shutting down subprocesses..."
+    for pid in "${pids[@]:-}"; do
+        if kill -0 "$pid" 2>/dev/null; then
+            kill "$pid" || true
+        fi
+    done
+}
+trap cleanup EXIT INT TERM
+
+for cmd in "${commands[@]}"; do
+    echo "Starting subprocess: $cmd"
+    bash -lc "$cmd" &
+    pids+=("$!")
+done
+
+exit_code=0
+for pid in "${pids[@]}"; do
+    if ! wait "$pid"; then
+        exit_code=$?
+    fi
+done
+
+exit "$exit_code"
