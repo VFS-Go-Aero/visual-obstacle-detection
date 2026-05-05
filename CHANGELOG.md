@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-05-05
+
 ### Added
 - Added `launch_files/launch/launch_all.launch.py` to launch MAVROS, the multi-ZED setup, and the visual obstacle detection pipeline together; uses `setsid` process groups with PID-file tracking and handles `XMLLaunchDescriptionSource` / `AnyLaunchDescriptionSource` imports across ROS 2 distributions.
 - Added `scripts/launch.sh` shell helper to start the full system as `setsid` process groups, write PIDs to a PID file, and support optional ROS logging via `--logging=true|false`.
@@ -269,7 +271,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated ZED2 transform parameters to zero.
 - Updated static transform publisher arguments for clarity.
 
-[Unreleased]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.10.3...HEAD
+[Unreleased]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.10.3...v1.0.0
 [0.10.3]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.10.2...v0.10.3
 [0.10.2]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.10.1...v0.10.2
 [0.10.1]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.10.0...v0.10.1
