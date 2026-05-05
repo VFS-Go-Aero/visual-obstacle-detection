@@ -1,0 +1,11 @@
+[Unit]
+Description=Startup of Perception and Obstacle Detection systems
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=~/ros2_ws/src/visual-obstacle-detection/scripts/launch.sh
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

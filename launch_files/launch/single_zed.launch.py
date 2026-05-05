@@ -27,6 +27,7 @@ def generate_launch_description():
             "publish_tf": "false",
             "publish_map_tf": "false",
             "pub_frame_rate": "15.0",
+            "log_level": "info",
         }.items(),
     )
 
@@ -38,9 +39,11 @@ def generate_launch_description():
         name="base_to_zed1_tf",
         arguments=[
             "0.1524", "0.0", "-0.127",
-            "0.0", "0.0", "3.14159",
+            "0.0", "0.0", "0.0",
             "base_link",
             "zed1_camera_link",
+            "--ros-args",
+            "--log-level", "info",
         ],
     )
 
