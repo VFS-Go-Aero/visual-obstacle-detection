@@ -17,13 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Updated `launch_files/launch/multi_zed.launch.py` and `launch_files/launch/single_zed.launch.py` to use `info` logging level for ZED driver launches and static transform publishers, and corrected static extrinsic rotations for `zed1_camera_link` and `zed2_camera_link` to no rotation (removed erroneous π yaw).
-- Added `v` launch argument to `visual_obstacle_detection/launch/visual_obstacle_detection.launch.py` to enable verbose obstacle detection logging via `v:=true`; passes it as the `verbose` parameter to the `obstacle_detection` node.
 - Updated `visual_obstacle_detection/visual_obstacle_detection/obstacle_detection.py` to support the `verbose` ROS parameter: diagnostic heartbeat and per-callback logs are downgraded to DEBUG by default; per-frame sector counts are logged at INFO only when verbose is enabled or the count changes; adds `_last_n_obs` tracking to suppress duplicate log lines.
 
 ## [0.10.3] - 2026-04-18
 
 ### Added
-- Added `v` launch argument to `visual_obstacle_detection/launch/visual_obstacle_detection.launch.py` to enable verbose obstacle detection logging via `v:=true`.
+- Added `v` launch argument to `visual_obstacle_detection/launch/visual_obstacle_detection.launch.py` to enable verbose obstacle detection logging via `v:=true`; passes it as the `verbose` parameter to the `obstacle_detection` node.
 
 ## [0.10.2] - 2026-04-18
 
