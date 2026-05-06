@@ -6,7 +6,7 @@ package_name = "visual_obstacle_detection"
 
 setup(
     name=package_name,
-    version="0.10.3",
+    version="1.0.0",
     packages=[package_name],
     data_files=[
         ("share/ament_index/resource_index/packages", ["resource/" + package_name]),

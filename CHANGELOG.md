@@ -7,10 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-05-05
+
+### Added
+- Added `launch_files/launch/launch_all.launch.py` to launch MAVROS, the multi-ZED setup, and the visual obstacle detection pipeline together; uses `setsid` process groups with PID-file tracking and handles `XMLLaunchDescriptionSource` / `AnyLaunchDescriptionSource` imports across ROS 2 distributions.
+- Added `scripts/launch.sh` shell helper to start the full system as `setsid` process groups, write PIDs to a PID file, and support optional ROS logging via `--logging=true|false`.
+- Added `scripts/stop_launch.sh` to terminate all subprocesses started by `launch.sh` using cascaded process-group signals (SIGINT → SIGTERM → SIGKILL) read from the PID file.
+- Added `scripts/visual-obstacle-detection.service` systemd unit file to run the full perception and obstacle detection system as a service on boot.
+
+### Changed
+- Updated `launch_files/launch/multi_zed.launch.py` and `launch_files/launch/single_zed.launch.py` to use `info` logging level for ZED driver launches and static transform publishers, and corrected static extrinsic rotations for `zed1_camera_link` and `zed2_camera_link` to no rotation (removed erroneous π yaw).
+- Updated `visual_obstacle_detection/visual_obstacle_detection/obstacle_detection.py` to support the `verbose` ROS parameter: diagnostic heartbeat and per-callback logs are downgraded to DEBUG by default; per-frame sector counts are logged at INFO only when verbose is enabled or the count changes; adds `_last_n_obs` tracking to suppress duplicate log lines.
+
 ## [0.10.3] - 2026-04-18
 
 ### Added
-- Added `v` launch argument to `visual_obstacle_detection/launch/visual_obstacle_detection.launch.py` to enable verbose obstacle detection logging via `v:=true`.
+- Added `v` launch argument to `visual_obstacle_detection/launch/visual_obstacle_detection.launch.py` to enable verbose obstacle detection logging via `v:=true`; passes it as the `verbose` parameter to the `obstacle_detection` node.
 
 ## [0.10.2] - 2026-04-18
 
@@ -258,7 +270,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated ZED2 transform parameters to zero.
 - Updated static transform publisher arguments for clarity.
 
-[Unreleased]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.10.3...HEAD
+[Unreleased]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.10.3...v1.0.0
 [0.10.3]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.10.2...v0.10.3
 [0.10.2]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.10.1...v0.10.2
 [0.10.1]: https://github.com/VFS-Go-Aero/visual-obstacle-detection/compare/v0.10.0...v0.10.1

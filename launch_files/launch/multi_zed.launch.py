@@ -27,6 +27,7 @@ def generate_launch_description():
             "publish_tf": "false",
             "publish_map_tf": "false",
             "pub_frame_rate": "15.0",
+            "log_level": "info",
         }.items(),
     )
 
@@ -39,6 +40,7 @@ def generate_launch_description():
             "publish_tf": "false",
             "publish_map_tf": "false",
             "pub_frame_rate": "15.0",
+            "log_level": "info",
         }.items(),
     )
 
