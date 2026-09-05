@@ -43,7 +43,7 @@ def build_sector_map(points: np.ndarray,
     # drop NaN and zero-distance points
     finite_mask = np.isfinite(points).all(axis=1)
     dists = np.linalg.norm(points, axis=1)
-    valid = finite_mask & (dists > 0)
+    valid = finite_mask & (dists > 0) & (dists <= 6.0)
 
     if not np.any(valid):
         return np.zeros(len(points), dtype=bool), np.zeros(len(points), dtype=np.uint32)
