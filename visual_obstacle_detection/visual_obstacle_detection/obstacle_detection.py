@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 
+import time
 import numpy as np
+
+from .detection_support import (
+    required_points, coherent_groups, CandidateConfirmation,
+)
 
 import rclpy
 from rclpy.logging import LoggingSeverity
@@ -12,10 +17,12 @@ from std_msgs.msg import Header
 
 
 # ── sector-map config ─────────────────────────────────────────────────────────
-N_AZ = 8     # azimuth bins   (360 / 8 = 45° each)
-N_EL = 8     # elevation bins (180 / 8 = 45° each)
+N_AZ = 32    # azimuth bins (360 / 32 = 11.25° each)
+N_EL = 8     # elevation bins (180 / 8 = 22.5° each)
 DIST_BIN_W = 0.1    # distance shell width (metres)
-MIN_POINTS = 100      # min points in a shell to count as a real obstacle
+MIN_POINTS = 100      # required support at distances <= 2 m
+MIN_POINTS_FLOOR = 20
+SUPPORT_BINS = 3      # combine up to three adjacent 0.1 m bins
 # ─────────────────────────────────────────────────────────────────────────────
 
 
@@ -23,18 +30,20 @@ def build_sector_map(points: np.ndarray,
                      n_az: int = N_AZ,
                      n_el: int = N_EL,
                      dist_bin_w: float = DIST_BIN_W,
-                     min_pts: int = MIN_POINTS):
+                     min_pts: int = MIN_POINTS,
+                     nearest_ranges: dict | None = None):
     """
     Build a sector map finding the nearest obstacle in each angular sector.
 
     Divide the point cloud into angular sectors and, for each sector, find
-    the near edge of the first distance-bin that contains >= min_pts points.
+    the nearest spatially coherent group with distance-adaptive support
+    within a sliding window of three adjacent distance bins.
 
     Returns
     -------
     winner_mask : bool array, shape (N,)
         True for every point that is the reported obstacle representative of
-        its sector (i.e. the closest point inside the first dense bin).
+        its sector (a measured point near the center of the first dense bin).
 
     """
     if points.shape[0] == 0:
@@ -43,7 +52,7 @@ def build_sector_map(points: np.ndarray,
     # drop NaN and zero-distance points
     finite_mask = np.isfinite(points).all(axis=1)
     dists = np.linalg.norm(points, axis=1)
-    valid = finite_mask & (dists > 0) & (dists <= 6.0)
+    valid = finite_mask & (dists > 0) & (dists <= 5.0)
 
     if not np.any(valid):
         return np.zeros(len(points), dtype=bool), np.zeros(len(points), dtype=np.uint32)
@@ -72,20 +81,42 @@ def build_sector_map(points: np.ndarray,
             max_d = sector_dists.max()
             if not np.isfinite(max_d) or max_d <= 0:
                 continue
-            bin_edges = np.arange(0, max_d + dist_bin_w, dist_bin_w)
-            bin_ids = np.digitize(sector_dists, bin_edges) - 1   # 0-indexed
+            bin_ids = np.floor(sector_dists / dist_bin_w).astype(np.int64)
+            bin_counts = np.bincount(bin_ids)
 
-            # walk near → far; first bin with enough points wins
-            for b in range(len(bin_edges) - 1):
-                in_bin = bin_ids == b
-                if in_bin.sum() >= min_pts:
-                    pts_in_bin = sector_indices[in_bin]
-                    closest = pts_in_bin[np.argmin(sector_dists[in_bin])]
-                    winner_mask[closest] = True
-                    sector_id = a * n_el + e
-                    winner_sector[closest] = sector_id
-                    break
-            # no bin reached threshold → sector is clear, no winner
+            # Sliding windows prevent a surface being split at shell boundaries.
+            padded = np.pad(bin_counts, (0, SUPPORT_BINS - 1))
+            counts = sum(padded[k:k + len(bin_counts)] for k in range(SUPPORT_BINS))
+            thresholds = required_points(
+                np.arange(len(bin_counts)) * dist_bin_w,
+                base=min_pts, floor=min(MIN_POINTS_FLOOR, min_pts),
+            )
+            for b in np.flatnonzero((counts >= thresholds) & (bin_counts > 0)):
+                in_window = (bin_ids >= b) & (bin_ids < b + SUPPORT_BINS)
+                window_indices = sector_indices[in_window]
+                candidates = []
+                for group in coherent_groups(points[window_indices]):
+                    indices = window_indices[group]
+                    near = float(dists[indices].min())
+                    needed = required_points(
+                        near, base=min_pts, floor=min(MIN_POINTS_FLOOR, min_pts),
+                    )
+                    if len(indices) >= needed:
+                        candidates.append((near, indices))
+                if not candidates:
+                    continue
+                near, pts_in_bin = min(candidates, key=lambda candidate: candidate[0])
+                center = np.median(points[pts_in_bin], axis=0)
+                closest = pts_in_bin[np.argmin(
+                    np.linalg.norm(points[pts_in_bin] - center, axis=1)
+                )]
+                winner_mask[closest] = True
+                sector_id = a * n_el + e
+                winner_sector[closest] = sector_id
+                if nearest_ranges is not None:
+                    nearest_ranges[sector_id] = near
+                break
+            # No supported group means unknown, not evidence of free space.
 
     return winner_mask, winner_sector
 
@@ -106,25 +137,28 @@ class ObstacleDetection(Node):
         self._zero_obs_streak = 0
         self._frame_mismatch_count = 0
         self._last_n_obs = None
+        self._confirmation = CandidateConfirmation()
         self._health_timer = self.create_timer(5.0, self._health_check)
 
         # publish only the obstacle-representative points (red)
         self.pub = self.create_publisher(
             PointCloud2,
             "/merged_cloud/obstacles",
-            10,
+            1,
         )
 
         self._sub_merged = self.create_subscription(
             PointCloud2,
             "/merged_cloud",
             self._cb_merged,
-            10,
+            1,
         )
 
         self.get_logger().info(
             f"Obstacle detection started  "
-            f"[{N_AZ}×{N_EL} sectors, bin_w={DIST_BIN_W}m, min_pts={MIN_POINTS}]"
+            f"[{N_AZ}×{N_EL} sectors, bin_w={DIST_BIN_W}m, "
+            f"support_bins={SUPPORT_BINS}, adaptive_points={MIN_POINTS_FLOOR}–{MIN_POINTS}, "
+            "confirmation=2 of 3 frames, hold=0.6s]"
         )
         if self._verbose:
             self.get_logger().debug("Logger level forced to DEBUG in code")
@@ -133,31 +167,12 @@ class ObstacleDetection(Node):
 
     def _parse(self, msg: PointCloud2) -> np.ndarray:
         try:
-            structured = np.array(
-                list(pc2.read_points(msg, field_names=("x", "y", "z"), skip_nans=True))
-            )
+            return pc2.read_points_numpy(
+                msg, field_names=("x", "y", "z"), skip_nans=True,
+            ).reshape(-1, 3).astype(np.float32, copy=False)
         except Exception as exc:
             self.get_logger().error(f"PointCloud parse failed: {exc}")
             return np.empty((0, 3), dtype=np.float32)
-
-        if structured.size == 0:
-            return np.empty((0, 3), dtype=np.float32)
-
-        if structured.dtype.names is None:
-            # Some sensor_msgs_py versions return plain tuples instead of named fields.
-            arr = np.asarray(structured, dtype=np.float32)
-            if arr.ndim == 1:
-                arr = arr.reshape(1, -1)
-            if arr.shape[1] < 3:
-                self.get_logger().error(
-                    f"Unexpected parsed point shape={arr.shape}; expected (?, >=3)"
-                )
-                return np.empty((0, 3), dtype=np.float32)
-            return arr[:, :3]
-
-        return np.column_stack(
-            [structured["x"], structured["y"], structured["z"]]
-        ).astype(np.float32)
 
     # ── callbacks ─────────────────────────────────────────────────────────────
 
@@ -214,16 +229,28 @@ class ObstacleDetection(Node):
             self._empty_detect_count += 1
             if self._empty_detect_count <= 10 or self._empty_detect_count % 20 == 0:
                 self.get_logger().warning(
-                    "Skipping detect/publish because cloud is empty "
+                    "Publishing empty obstacle observation because cloud is empty "
                     f"(count={self._empty_detect_count})"
                 )
-            return
 
-        winner_mask, winner_sector = build_sector_map(self.cloud)
+        nearest_ranges = {}
+        winner_mask, winner_sector = build_sector_map(
+            self.cloud, nearest_ranges=nearest_ranges,
+        )
 
         obstacle_points = self.cloud[winner_mask]
         obstacle_sectors = winner_sector[winner_mask]
 
+        # Preserve the nearest measured range in each winning bin while using
+        # its central representative direction, so stabilization never moves
+        # a reported obstacle farther away.
+        for i, point in enumerate(obstacle_points):
+            point_distance = np.linalg.norm(point)
+            obstacle_points[i] *= nearest_ranges[int(obstacle_sectors[i])] / point_distance
+
+        obstacle_points, obstacle_sectors = self._confirmation.stabilize(
+            obstacle_points, obstacle_sectors, time.monotonic(),
+        )
         n_obs = obstacle_points.shape[0]
 
         if n_obs == 0:
@@ -233,7 +260,7 @@ class ObstacleDetection(Node):
                 self.get_logger().warning(
                     "No obstacle representatives this frame "
                     f"(streak={self._zero_obs_streak}, pts={self.cloud.shape[0]}, "
-                    f"dist_min={np.min(d):.3f}, dist_max={np.max(d):.3f}, "
+                    f"dist_min={np.min(d) if d.size else float('nan'):.3f}, dist_max={np.max(d) if d.size else float('nan'):.3f}, "
                     f"bin_w={DIST_BIN_W}, min_pts={MIN_POINTS}, sectors={N_AZ}x{N_EL})"
                 )
         else:
