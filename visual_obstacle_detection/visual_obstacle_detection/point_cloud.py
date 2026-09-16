@@ -108,13 +108,13 @@ class PointCloud(Node):
             PointCloud2,
             self._topic_zed1,
             self._cb_zed1,
-            10,
+            1,
         )
         self._sub_zed2 = self.create_subscription(
             PointCloud2,
             self._topic_zed2,
             self._cb_zed2,
-            10,
+            1,
         )
 
         self._merged_pub = self.create_publisher(PointCloud2, "/merged_cloud", 10)
@@ -247,18 +247,14 @@ class PointCloud(Node):
             Float32 array of shape (N, 3).
 
         """
-        structured = np.array(
-            list(point_cloud2.read_points(
-                msg,
-                field_names=("x", "y", "z"),
-                skip_nans=True,
-            )),
+        points = point_cloud2.read_points_numpy(
+            msg,
+            field_names=("x", "y", "z"),
+            skip_nans=True,
         )
-        if structured.size == 0:
+        if points.size == 0:
             return np.empty((0, 3), dtype=np.float32)
-        return np.column_stack(
-            [structured["x"], structured["y"], structured["z"]]
-        ).astype(np.float32)
+        return np.asarray(points, dtype=np.float32).reshape(-1, 3)
 
     def _merge(self) -> None:
         """Concatenate the two camera clouds and publish on /merged_cloud."""
@@ -297,7 +293,7 @@ class PointCloud(Node):
         header = std_msg.Header()
         header.stamp = self.get_clock().now().to_msg()
         header.frame_id = self._frame_id
-        msg = point_cloud2.create_cloud_xyz32(header, self.cloud.tolist())
+        msg = point_cloud2.create_cloud_xyz32(header, self.cloud)
         self._merged_pub.publish(msg)
 
         self.get_logger().info(
