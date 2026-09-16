@@ -112,14 +112,14 @@ class ObstacleDetection(Node):
         self.pub = self.create_publisher(
             PointCloud2,
             "/merged_cloud/obstacles",
-            10,
+            1,
         )
 
         self._sub_merged = self.create_subscription(
             PointCloud2,
             "/merged_cloud",
             self._cb_merged,
-            10,
+            1,
         )
 
         self.get_logger().info(
@@ -133,31 +133,18 @@ class ObstacleDetection(Node):
 
     def _parse(self, msg: PointCloud2) -> np.ndarray:
         try:
-            structured = np.array(
-                list(pc2.read_points(msg, field_names=("x", "y", "z"), skip_nans=True))
+            points = pc2.read_points_numpy(
+                msg,
+                field_names=("x", "y", "z"),
+                skip_nans=True,
             )
         except Exception as exc:
             self.get_logger().error(f"PointCloud parse failed: {exc}")
             return np.empty((0, 3), dtype=np.float32)
 
-        if structured.size == 0:
+        if points.size == 0:
             return np.empty((0, 3), dtype=np.float32)
-
-        if structured.dtype.names is None:
-            # Some sensor_msgs_py versions return plain tuples instead of named fields.
-            arr = np.asarray(structured, dtype=np.float32)
-            if arr.ndim == 1:
-                arr = arr.reshape(1, -1)
-            if arr.shape[1] < 3:
-                self.get_logger().error(
-                    f"Unexpected parsed point shape={arr.shape}; expected (?, >=3)"
-                )
-                return np.empty((0, 3), dtype=np.float32)
-            return arr[:, :3]
-
-        return np.column_stack(
-            [structured["x"], structured["y"], structured["z"]]
-        ).astype(np.float32)
+        return np.asarray(points, dtype=np.float32).reshape(-1, 3)
 
     # ── callbacks ─────────────────────────────────────────────────────────────
 
