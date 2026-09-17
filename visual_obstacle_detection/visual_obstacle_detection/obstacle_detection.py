@@ -12,8 +12,8 @@ from std_msgs.msg import Header
 
 
 # ── sector-map config ─────────────────────────────────────────────────────────
-N_AZ = 8     # azimuth bins   (360 / 8 = 45° each)
-N_EL = 8     # elevation bins (180 / 8 = 45° each)
+N_AZ = 32     # azimuth bins   (360 / 32 = 11.25° each)
+N_EL = 8     # elevation bins (180 / 8 = 22.5° each)
 DIST_BIN_W = 0.1    # distance shell width (metres)
 MIN_POINTS = 100      # min points in a shell to count as a real obstacle
 # ─────────────────────────────────────────────────────────────────────────────
