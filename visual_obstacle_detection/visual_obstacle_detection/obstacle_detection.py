@@ -16,6 +16,7 @@ N_AZ = 32     # azimuth bins   (360 / 32 = 11.25° each)
 N_EL = 8     # elevation bins (180 / 8 = 22.5° each)
 DIST_BIN_W = 0.1    # distance shell width (metres)
 MIN_POINTS = 100      # min points in a shell to count as a real obstacle
+DIST_EMA_ALPHA = 0.3    # smoothing factor for per-sector reported distance (0=frozen, 1=no smoothing)
 # ─────────────────────────────────────────────────────────────────────────────
 
 
@@ -123,6 +124,7 @@ class ObstacleDetection(Node):
         self._zero_obs_streak = 0
         self._frame_mismatch_count = 0
         self._last_n_obs = None
+        self._sector_dist_ema = {}
         self._health_timer = self.create_timer(5.0, self._health_check)
 
         # publish only the obstacle-representative points (red)
@@ -213,6 +215,33 @@ class ObstacleDetection(Node):
 
     # ── detection + publish ───────────────────────────────────────────────────
 
+    def _smooth_distances(self, points: np.ndarray, sectors: np.ndarray) -> np.ndarray:
+        """Exponentially smooth each sector's reported distance to damp frame-to-frame jitter."""
+        if points.shape[0] == 0:
+            self._sector_dist_ema = {}
+            return points
+
+        smoothed = points.copy()
+        current_ids = set()
+        for i, sector_id in enumerate(sectors):
+            sector_id = int(sector_id)
+            current_ids.add(sector_id)
+            dist = float(np.linalg.norm(points[i]))
+            if dist <= 0:
+                continue
+            prev = self._sector_dist_ema.get(sector_id)
+            new_dist = dist if prev is None else (
+                DIST_EMA_ALPHA * dist + (1 - DIST_EMA_ALPHA) * prev
+            )
+            self._sector_dist_ema[sector_id] = new_dist
+            smoothed[i] = points[i] * (new_dist / dist)
+
+        # forget sectors that no longer have a detection so re-entry starts fresh
+        for sid in set(self._sector_dist_ema) - current_ids:
+            del self._sector_dist_ema[sid]
+
+        return smoothed
+
     def _detect_and_publish(self) -> None:
         if self.cloud.shape[0] == 0:
             self._empty_detect_count += 1
@@ -224,6 +253,7 @@ class ObstacleDetection(Node):
             return
 
         obstacle_points, obstacle_sectors = build_sector_map(self.cloud)
+        obstacle_points = self._smooth_distances(obstacle_points, obstacle_sectors)
 
         n_obs = obstacle_points.shape[0]
 
