@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Added distance-adaptive, spatially coherent obstacle support using sliding distance-bin windows and connected voxel groups.
+- Added temporal obstacle confirmation requiring a candidate in two of three frames, with brief retention across missed frames.
+- Added unit tests for distance-adaptive support and coherent obstacle grouping.
+
+### Changed
+- Increased obstacle detection resolution to 32 azimuth sectors, limited detection to 5 m, and switched point-cloud parsing to NumPy APIs.
+- Reduced ROS point-cloud subscription queue depths and publish representative points at the nearest measured range.
+
+### Fixed
+- Prevented empty or stale detector data from retaining obstacles indefinitely, including stale obstacle data in the MAVLink bridge.
+
 ## [1.0.0] - 2026-05-05
 
 ### Added
