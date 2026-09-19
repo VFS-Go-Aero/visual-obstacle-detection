@@ -29,16 +29,20 @@ def build_sector_map(points: np.ndarray,
 
     Divide the point cloud into angular sectors and, for each sector, find
     the near edge of the first distance-bin that contains >= min_pts points.
+    The reported obstacle point is placed at the sector's angular center,
+    at the distance of the closest point inside that dense bin.
 
     Returns
     -------
-    winner_mask : bool array, shape (N,)
-        True for every point that is the reported obstacle representative of
-        its sector (i.e. the closest point inside the first dense bin).
+    obstacle_points : float array, shape (M, 3)
+        One representative xyz point per winning sector, centered on the
+        sector's azimuth/elevation midpoint at the detected obstacle distance.
+    obstacle_sectors : uint32 array, shape (M,)
+        Sector id (a * n_el + e) for each entry in obstacle_points.
 
     """
     if points.shape[0] == 0:
-        return np.zeros(0, dtype=bool), np.zeros(0, dtype=np.uint32)
+        return np.zeros((0, 3), dtype=np.float32), np.zeros(0, dtype=np.uint32)
 
     # drop NaN and zero-distance points
     finite_mask = np.isfinite(points).all(axis=1)
@@ -46,7 +50,7 @@ def build_sector_map(points: np.ndarray,
     valid = finite_mask & (dists > 0) & (dists <= 6.0)
 
     if not np.any(valid):
-        return np.zeros(len(points), dtype=bool), np.zeros(len(points), dtype=np.uint32)
+        return np.zeros((0, 3), dtype=np.float32), np.zeros(0, dtype=np.uint32)
 
     dirs = np.zeros_like(points)
     dirs[valid] = points[valid] / dists[valid, np.newaxis]
@@ -57,8 +61,11 @@ def build_sector_map(points: np.ndarray,
     az_idx = ((az + np.pi) / (2 * np.pi) * n_az).astype(int) % n_az
     el_idx = ((el + np.pi / 2) / np.pi * n_el).astype(int).clip(0, n_el - 1)
 
-    winner_mask = np.zeros(len(points), dtype=bool)
-    winner_sector = np.zeros(len(points), dtype=np.uint32)
+    az_bin_w = 2 * np.pi / n_az
+    el_bin_w = np.pi / n_el
+
+    obstacle_points = []
+    obstacle_sectors = []
 
     for a in range(n_az):
         for e in range(n_el):
@@ -67,7 +74,6 @@ def build_sector_map(points: np.ndarray,
                 continue
 
             sector_dists = dists[mask]
-            sector_indices = np.where(mask)[0]
 
             max_d = sector_dists.max()
             if not np.isfinite(max_d) or max_d <= 0:
@@ -79,15 +85,26 @@ def build_sector_map(points: np.ndarray,
             for b in range(len(bin_edges) - 1):
                 in_bin = bin_ids == b
                 if in_bin.sum() >= min_pts:
-                    pts_in_bin = sector_indices[in_bin]
-                    closest = pts_in_bin[np.argmin(sector_dists[in_bin])]
-                    winner_mask[closest] = True
-                    sector_id = a * n_el + e
-                    winner_sector[closest] = sector_id
+                    closest_dist = sector_dists[in_bin].min()
+
+                    az_center = -np.pi + (a + 0.5) * az_bin_w
+                    el_center = -np.pi / 2 + (e + 0.5) * el_bin_w
+                    center_dir = np.array([
+                        np.cos(el_center) * np.cos(az_center),
+                        np.cos(el_center) * np.sin(az_center),
+                        np.sin(el_center),
+                    ])
+
+                    obstacle_points.append(center_dir * closest_dist)
+                    obstacle_sectors.append(a * n_el + e)
                     break
             # no bin reached threshold → sector is clear, no winner
 
-    return winner_mask, winner_sector
+    if not obstacle_points:
+        return np.zeros((0, 3), dtype=np.float32), np.zeros(0, dtype=np.uint32)
+
+    return (np.asarray(obstacle_points, dtype=np.float32),
+            np.asarray(obstacle_sectors, dtype=np.uint32))
 
 
 class ObstacleDetection(Node):
@@ -206,10 +223,7 @@ class ObstacleDetection(Node):
                 )
             return
 
-        winner_mask, winner_sector = build_sector_map(self.cloud)
-
-        obstacle_points = self.cloud[winner_mask]
-        obstacle_sectors = winner_sector[winner_mask]
+        obstacle_points, obstacle_sectors = build_sector_map(self.cloud)
 
         n_obs = obstacle_points.shape[0]
 
