@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Added a full-system launch entry point in `launch_files/launch/launch_all.launch.py` to start MAVROS, the dual-ZED stack, and the obstacle-detection pipeline together with logging enablement and launch-source compatibility handling.
+- Added launch and service helpers to simplify starting, monitoring, and stopping the full visual obstacle detection system from shell and systemd environments.
+
+### Changed
+- Updated the obstacle detection node in `visual_obstacle_detection/visual_obstacle_detection/obstacle_detection.py` to use the `verbose` parameter for heartbeat and callback logging, reducing noisy default output while preserving detailed diagnostics when needed.
+- Tightened launch-file compatibility and source selection across ROS 2 Python/XML launch layouts so the integrated startup flow works reliably across supported distributions.
+
 ## [1.0.0] - 2026-05-05
 
 ### Added
