@@ -13,6 +13,23 @@ Visual Obstacle Detection is a project designed to detect obstacles using visual
 - ROS 2 (Humble) integration with `ament_python` packages
 
 ## Repository Structure
+
+The sector detector uses a 5 m maximum range and distance-adaptive support:
+`ceil(max(20, min(100, 100 * (2 / distance)^2)))` points. Support is
+counted within sliding windows of three adjacent 10 cm distance bins and
+connected occupied 10 cm voxels (26-neighbor adjacency), rather than pooling
+unrelated points across an entire sector. The nearest supported group wins.
+
+Candidates must match in the same angular sector within 0.5 m on two of
+three received clouds; confirmation history resets after a gap longer than
+1 second. A confirmed observation survives brief misses for at most 0.6 seconds
+from its last matching measurement. This is body-frame matching, not
+pose-compensated tracking. Empty clouds advance the miss history and retained
+observations expire; rejected depth is not evidence of free space. The MAVLink
+bridge stops republishing cached obstacles after 0.75 seconds without detector
+updates. These initial thresholds need live validation during vehicle motion
+and at angular-sector boundaries.
+
 - `visual_obstacle_detection/`: Core ROS 2 package for obstacle detection
   - `point_cloud.py` — Point cloud subscriber and merger
   - `obstacle_detection.py` — Sector-map-based obstacle detection node

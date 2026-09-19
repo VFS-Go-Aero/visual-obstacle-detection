@@ -23,7 +23,7 @@ def generate_launch_description():
         launch_arguments={
             "camera_name": "zed1",
             "camera_model": "zedx",
-            "serial_number": "44659546",
+            "serial_number": "42203370",
             "publish_tf": "false",
             "publish_map_tf": "false",
             "pub_frame_rate": "15.0",

@@ -1,3 +1,5 @@
+import time
+
 import rclpy
 from rclpy.node import Node
 from mavros_msgs.msg import ObstacleDistance3D
@@ -23,6 +25,7 @@ class ObstacleToMavlink(Node):
         self._min_distance = self.get_parameter("MIN_DISTANCE").value
         frequency = self.get_parameter("FREQUENCY").value
 
+        self._received_at = None
         self._latest_cloud: list[tuple[float, float, float, int]] | None = None
 
         self.create_subscription(
@@ -47,6 +50,7 @@ class ObstacleToMavlink(Node):
         )
 
     def _cb_obstacles(self, msg: PointCloud2) -> None:
+        self._received_at = time.monotonic()
         pts = list(point_cloud2.read_points(
             msg,
             field_names=("x", "y", "z", "obstacle_id"),
@@ -63,6 +67,8 @@ class ObstacleToMavlink(Node):
 
     def _publish(self) -> None:
         now = self.get_clock().now().to_msg()
+        if self._received_at is None or time.monotonic() - self._received_at > 0.75:
+            self._latest_cloud = None
         cloud = self._latest_cloud
 
         if cloud is not None and len(cloud) > 0:
