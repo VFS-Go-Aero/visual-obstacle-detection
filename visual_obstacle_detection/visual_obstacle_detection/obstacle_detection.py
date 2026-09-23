@@ -17,6 +17,8 @@ N_EL = 8     # elevation bins (180 / 8 = 22.5° each)
 DIST_BIN_W = 0.1    # distance shell width (metres)
 MIN_POINTS = 100      # min points in a shell to count as a real obstacle
 DIST_EMA_ALPHA = 0.15    # smoothing factor for per-sector reported distance (0=frozen, 1=no smoothing)
+SECTOR_HOLD_FRAMES = 2    # keep a previously seen sector alive for a couple frames to suppress one-frame flicker
+SECTOR_DISTANCE_TOL = 0.25    # hysteresis tolerance before a sector distance is treated as a real change
 # ─────────────────────────────────────────────────────────────────────────────
 
 
@@ -125,6 +127,7 @@ class ObstacleDetection(Node):
         self._frame_mismatch_count = 0
         self._last_n_obs = None
         self._sector_dist_ema = {}
+        self._sector_state = {}
         self._health_timer = self.create_timer(5.0, self._health_check)
 
         # publish only the obstacle-representative points (red)
@@ -215,32 +218,60 @@ class ObstacleDetection(Node):
 
     # ── detection + publish ───────────────────────────────────────────────────
 
-    def _smooth_distances(self, points: np.ndarray, sectors: np.ndarray) -> np.ndarray:
-        """Exponentially smooth each sector's reported distance to damp frame-to-frame jitter."""
+    def _smooth_distances(self, points: np.ndarray, sectors: np.ndarray):
+        """Smooth the per-sector distance while holding a recent sector for a few frames."""
         if points.shape[0] == 0:
-            self._sector_dist_ema = {}
-            return points
+            for sid, state in list(self._sector_state.items()):
+                state["hold"] -= 1
+                if state["hold"] <= 0:
+                    del self._sector_state[sid]
+            return np.zeros((0, 3), dtype=np.float32), np.zeros(0, dtype=np.uint32)
 
-        smoothed = points.copy()
         current_ids = set()
-        for i, sector_id in enumerate(sectors):
-            sector_id = int(sector_id)
-            current_ids.add(sector_id)
-            dist = float(np.linalg.norm(points[i]))
+        filtered_points = []
+        filtered_sectors = []
+
+        for p, sector_id in zip(points, sectors):
+            sid = int(sector_id)
+            current_ids.add(sid)
+            dist = float(np.linalg.norm(p))
             if dist <= 0:
                 continue
-            prev = self._sector_dist_ema.get(sector_id)
-            new_dist = dist if prev is None else (
-                DIST_EMA_ALPHA * dist + (1 - DIST_EMA_ALPHA) * prev
-            )
-            self._sector_dist_ema[sector_id] = new_dist
-            smoothed[i] = points[i] * (new_dist / dist)
 
-        # forget sectors that no longer have a detection so re-entry starts fresh
-        for sid in set(self._sector_dist_ema) - current_ids:
-            del self._sector_dist_ema[sid]
+            direction = p / dist
+            prev_state = self._sector_state.get(sid)
+            prev_dist = float(prev_state["dist"]) if prev_state is not None else dist
 
-        return smoothed
+            if prev_state is None:
+                new_dist = dist
+            elif abs(dist - prev_dist) <= SECTOR_DISTANCE_TOL:
+                new_dist = prev_dist + DIST_EMA_ALPHA * (dist - prev_dist)
+            else:
+                new_dist = prev_dist + 0.35 * (dist - prev_dist)
+
+            self._sector_state[sid] = {
+                "dist": new_dist,
+                "dir": direction,
+                "hold": SECTOR_HOLD_FRAMES,
+            }
+            filtered_points.append(direction * new_dist)
+            filtered_sectors.append(sid)
+
+        for sid, state in list(self._sector_state.items()):
+            if sid in current_ids:
+                continue
+            state["hold"] -= 1
+            if state["hold"] > 0:
+                filtered_points.append(state["dir"] * state["dist"])
+                filtered_sectors.append(sid)
+            else:
+                del self._sector_state[sid]
+
+        if not filtered_points:
+            return np.zeros((0, 3), dtype=np.float32), np.zeros(0, dtype=np.uint32)
+
+        return (np.asarray(filtered_points, dtype=np.float32),
+                np.asarray(filtered_sectors, dtype=np.uint32))
 
     def _detect_and_publish(self) -> None:
         if self.cloud.shape[0] == 0:
@@ -253,7 +284,7 @@ class ObstacleDetection(Node):
             return
 
         obstacle_points, obstacle_sectors = build_sector_map(self.cloud)
-        obstacle_points = self._smooth_distances(obstacle_points, obstacle_sectors)
+        obstacle_points, obstacle_sectors = self._smooth_distances(obstacle_points, obstacle_sectors)
 
         n_obs = obstacle_points.shape[0]
 
