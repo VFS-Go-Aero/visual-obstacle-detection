@@ -17,7 +17,7 @@ N_EL = 8     # elevation bins (180 / 8 = 22.5° each)
 DIST_BIN_W = 0.1    # distance shell width (metres)
 MIN_POINTS = 100      # min points in a shell to count as a real obstacle
 DIST_EMA_ALPHA = 0.15    # smoothing factor for per-sector reported distance (0=frozen, 1=no smoothing)
-SECTOR_HOLD_FRAMES = 2    # keep a previously seen sector alive for a couple frames to suppress one-frame flicker
+SECTOR_MAX_AGE = 2    # expire a sector if it has not been refreshed for this many frames
 SECTOR_DISTANCE_TOL = 0.25    # hysteresis tolerance before a sector distance is treated as a real change
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -126,7 +126,6 @@ class ObstacleDetection(Node):
         self._zero_obs_streak = 0
         self._frame_mismatch_count = 0
         self._last_n_obs = None
-        self._sector_dist_ema = {}
         self._sector_state = {}
         self._health_timer = self.create_timer(5.0, self._health_check)
 
@@ -219,13 +218,12 @@ class ObstacleDetection(Node):
     # ── detection + publish ───────────────────────────────────────────────────
 
     def _smooth_distances(self, points: np.ndarray, sectors: np.ndarray):
-        """Smooth the per-sector distance while holding a recent sector for a few frames."""
-        if points.shape[0] == 0:
-            for sid, state in list(self._sector_state.items()):
-                state["hold"] -= 1
-                if state["hold"] <= 0:
-                    del self._sector_state[sid]
-            return np.zeros((0, 3), dtype=np.float32), np.zeros(0, dtype=np.uint32)
+        """Update sector age in bulk so stale obstacles expire after a bounded timeout."""
+        state = self._sector_state
+
+        # increment age for all currently tracked sectors before deciding what to keep
+        for sid in list(state):
+            state[sid]["age"] += 1
 
         current_ids = set()
         filtered_points = []
@@ -239,7 +237,7 @@ class ObstacleDetection(Node):
                 continue
 
             direction = p / dist
-            prev_state = self._sector_state.get(sid)
+            prev_state = state.get(sid)
             prev_dist = float(prev_state["dist"]) if prev_state is not None else dist
 
             if prev_state is None:
@@ -249,23 +247,27 @@ class ObstacleDetection(Node):
             else:
                 new_dist = prev_dist + 0.35 * (dist - prev_dist)
 
-            self._sector_state[sid] = {
+            state[sid] = {
                 "dist": new_dist,
                 "dir": direction,
-                "hold": SECTOR_HOLD_FRAMES,
+                "age": 0,
             }
             filtered_points.append(direction * new_dist)
             filtered_sectors.append(sid)
 
-        for sid, state in list(self._sector_state.items()):
+        # keep stale sectors alive briefly, then expire them in bulk when age exceeds the timeout
+        to_drop = []
+        for sid, s in list(state.items()):
             if sid in current_ids:
                 continue
-            state["hold"] -= 1
-            if state["hold"] > 0:
-                filtered_points.append(state["dir"] * state["dist"])
-                filtered_sectors.append(sid)
+            if s["age"] > SECTOR_MAX_AGE:
+                to_drop.append(sid)
             else:
-                del self._sector_state[sid]
+                filtered_points.append(s["dir"] * s["dist"])
+                filtered_sectors.append(sid)
+
+        for sid in to_drop:
+            del state[sid]
 
         if not filtered_points:
             return np.zeros((0, 3), dtype=np.float32), np.zeros(0, dtype=np.uint32)
