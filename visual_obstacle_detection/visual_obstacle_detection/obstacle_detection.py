@@ -16,9 +16,9 @@ N_AZ = 32     # azimuth bins   (360 / 32 = 11.25° each)
 N_EL = 8     # elevation bins (180 / 8 = 22.5° each)
 DIST_BIN_W = 0.1    # distance shell width (metres)
 MIN_POINTS = 100      # min points in a shell to count as a real obstacle
-DIST_EMA_ALPHA = 0.3    # smoothing factor for per-sector reported distance (0=frozen, 1=no smoothing)
-SECTOR_MAX_AGE_SEC = 0.3    # expire a sector if it has not been refreshed for this long, bridges brief input dropouts
-SECTOR_DISTANCE_TOL = 0.25    # hysteresis tolerance before a sector distance is treated as a real change
+DIST_EMA_ALPHA = 0.3    # EMA factor for per-sector distance
+SECTOR_MAX_AGE_SEC = 0.3    # stale-sector timeout in seconds
+SECTOR_DISTANCE_TOL = 0.25    # distance hysteresis threshold in metres
 # ─────────────────────────────────────────────────────────────────────────────
 
 
@@ -214,18 +214,18 @@ class ObstacleDetection(Node):
                     f"(count={self._empty_parse_count}, rx_count={self._rx_count})"
                 )
 
-        # use the ZED-stamped capture time, not local wall-clock, so sector aging tracks sensor time
+        # Use the ZED capture stamp so sector aging tracks sensor time.
         self._last_stamp_sec = msg.header.stamp.sec + msg.header.stamp.nanosec * 1e-9
         self._detect_and_publish()
 
     # ── detection + publish ───────────────────────────────────────────────────
 
     def _smooth_distances(self, points: np.ndarray, sectors: np.ndarray):
-        """Hold each sector by sensor capture time so brief input dropouts don't blank the whole map at once."""
+        """Hold sectors by capture time through brief input dropouts."""
         state = self._sector_state
         now = self._last_stamp_sec
         if not now:
-            # no valid header stamp on this message (e.g. stamp never set upstream) → fall back to frame order
+            # An unset capture stamp cannot support time-based aging.
             state.clear()
             return points, sectors
 
@@ -293,7 +293,9 @@ class ObstacleDetection(Node):
         else:
             obstacle_points, obstacle_sectors = build_sector_map(self.cloud)
 
-        obstacle_points, obstacle_sectors = self._smooth_distances(obstacle_points, obstacle_sectors)
+        obstacle_points, obstacle_sectors = self._smooth_distances(
+            obstacle_points, obstacle_sectors
+        )
 
         n_obs = obstacle_points.shape[0]
 
