@@ -240,7 +240,8 @@ class ObstacleDetection(Node):
             prev_state = state.get(sid)
             prev_dist = float(prev_state["dist"]) if prev_state is not None else dist
 
-            if prev_state is None:
+            if prev_state is None or dist < prev_dist:
+                # obstacle got closer (or first sighting) → trust it immediately, no lag
                 new_dist = dist
             elif abs(dist - prev_dist) <= SECTOR_DISTANCE_TOL:
                 new_dist = prev_dist + DIST_EMA_ALPHA * (dist - prev_dist)
