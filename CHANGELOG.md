@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Added a full-system launch entry point in `launch_files/launch/launch_all.launch.py` to start MAVROS, the dual-ZED stack, and the obstacle-detection pipeline together with logging enablement and launch-source compatibility handling.
+- Added launch and service helpers to simplify starting, monitoring, and stopping the full visual obstacle detection system from shell and systemd environments.
+- Added `visual_obstacle_detection/visual_obstacle_detection/ground_plane_detection.py`, a node that fuses a downward rangefinder and IMU orientation into a ground-plane `MarkerArray` on `/ground_plane_detection/markers` for RViz2 visualization, registered as the `ground_plane_detection` console script.
+
+### Changed
+- Added throttled logging to `ground_plane_detection.py`: a `WARN` every 5s while rangefinder/IMU data is missing, and an `INFO` on each successful marker publish, to make topic/data issues visible without silent no-op behavior.
+
+### Changed
+- Updated the obstacle detection node in `visual_obstacle_detection/visual_obstacle_detection/obstacle_detection.py` to use the `verbose` parameter for heartbeat and callback logging, reducing noisy default output while preserving detailed diagnostics when needed.
+- Tightened launch-file compatibility and source selection across ROS 2 Python/XML launch layouts so the integrated startup flow works reliably across supported distributions.
+- Added a maximum obstacle range of 6 metres to `build_sector_map()` in `obstacle_detection.py`, excluding farther points from sector detection.
+- Increased azimuth resolution in `obstacle_detection.py` from 8 to 32 bins (`N_AZ`), narrowing each sector from 45° to 11.25° for finer angular obstacle localization.
+- Reduced `/zed1`/`/zed2` point cloud subscription queue depth from 10 to 1 and switched cloud parsing in `point_cloud.py` and `obstacle_detection.py` to `read_points_numpy`/direct array construction instead of structured-array + `tolist()` conversion, reducing per-frame parsing latency.
+- Updated `build_sector_map()` in `visual_obstacle_detection/visual_obstacle_detection/obstacle_detection.py` to report each obstacle point at its sector's angular center (using the closest in-bin point's distance) instead of the raw winning point's position, giving rangefinder-style, sector-aligned output.
+- Added per-sector temporal filtering to `obstacle_detection.py` to reduce output flicker: an asymmetric distance filter (`SECTOR_DISTANCE_TOL`, `DIST_EMA_ALPHA`) that snaps immediately to closer readings but smooths/dampens readings that get farther, plus a time-based hold (`SECTOR_MAX_AGE_SEC`) keyed off each `/merged_cloud` message's own `header.stamp` so a sector survives brief detection dropouts without expiring based on local processing/wall-clock jitter.
+- Changed `_detect_and_publish()` to always run the smoothing/hold step and publish, even when the incoming cloud is momentarily empty, instead of skipping publication entirely; this prevents held obstacles from being silently dropped and appearing to blank out downstream during brief input gaps.
+
 ## [1.0.0] - 2026-05-05
 
 ### Added
