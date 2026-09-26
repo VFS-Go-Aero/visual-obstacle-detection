@@ -17,7 +17,7 @@ N_EL = 8     # elevation bins (180 / 8 = 22.5° each)
 DIST_BIN_W = 0.1    # distance shell width (metres)
 MIN_POINTS = 100      # min points in a shell to count as a real obstacle
 DIST_EMA_ALPHA = 0.15    # smoothing factor for per-sector reported distance (0=frozen, 1=no smoothing)
-SECTOR_MAX_AGE = 2    # expire a sector if it has not been refreshed for this many frames
+SECTOR_MAX_AGE_SEC = 0.3    # expire a sector if it has not been refreshed for this long, bridges brief input dropouts
 SECTOR_DISTANCE_TOL = 0.25    # hysteresis tolerance before a sector distance is treated as a real change
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -127,6 +127,7 @@ class ObstacleDetection(Node):
         self._frame_mismatch_count = 0
         self._last_n_obs = None
         self._sector_state = {}
+        self._last_stamp_sec = None
         self._health_timer = self.create_timer(5.0, self._health_check)
 
         # publish only the obstacle-representative points (red)
@@ -213,17 +214,20 @@ class ObstacleDetection(Node):
                     f"(count={self._empty_parse_count}, rx_count={self._rx_count})"
                 )
 
+        # use the ZED-stamped capture time, not local wall-clock, so sector aging tracks sensor time
+        self._last_stamp_sec = msg.header.stamp.sec + msg.header.stamp.nanosec * 1e-9
         self._detect_and_publish()
 
     # ── detection + publish ───────────────────────────────────────────────────
 
     def _smooth_distances(self, points: np.ndarray, sectors: np.ndarray):
-        """Update sector age in bulk so stale obstacles expire after a bounded timeout."""
+        """Hold each sector by sensor capture time so brief input dropouts don't blank the whole map at once."""
         state = self._sector_state
-
-        # increment age for all currently tracked sectors before deciding what to keep
-        for sid in list(state):
-            state[sid]["age"] += 1
+        now = self._last_stamp_sec
+        if not now:
+            # no valid header stamp on this message (e.g. stamp never set upstream) → fall back to frame order
+            state.clear()
+            return points, sectors
 
         current_ids = set()
         filtered_points = []
@@ -251,17 +255,17 @@ class ObstacleDetection(Node):
             state[sid] = {
                 "dist": new_dist,
                 "dir": direction,
-                "age": 0,
+                "last_seen": now,
             }
             filtered_points.append(direction * new_dist)
             filtered_sectors.append(sid)
 
-        # keep stale sectors alive briefly, then expire them in bulk when age exceeds the timeout
+        # keep stale sectors alive briefly, then expire them in bulk once their hold time elapses
         to_drop = []
         for sid, s in list(state.items()):
             if sid in current_ids:
                 continue
-            if s["age"] > SECTOR_MAX_AGE:
+            if now - s["last_seen"] > SECTOR_MAX_AGE_SEC:
                 to_drop.append(sid)
             else:
                 filtered_points.append(s["dir"] * s["dist"])
@@ -281,12 +285,14 @@ class ObstacleDetection(Node):
             self._empty_detect_count += 1
             if self._empty_detect_count <= 10 or self._empty_detect_count % 20 == 0:
                 self.get_logger().warning(
-                    "Skipping detect/publish because cloud is empty "
+                    "Cloud is empty this frame, publishing held sector state instead "
                     f"(count={self._empty_detect_count})"
                 )
-            return
+            obstacle_points = np.zeros((0, 3), dtype=np.float32)
+            obstacle_sectors = np.zeros(0, dtype=np.uint32)
+        else:
+            obstacle_points, obstacle_sectors = build_sector_map(self.cloud)
 
-        obstacle_points, obstacle_sectors = build_sector_map(self.cloud)
         obstacle_points, obstacle_sectors = self._smooth_distances(obstacle_points, obstacle_sectors)
 
         n_obs = obstacle_points.shape[0]
