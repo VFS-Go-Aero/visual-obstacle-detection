@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Added a full-system launch entry point in `launch_files/launch/launch_all.launch.py` to start MAVROS, the dual-ZED stack, and the obstacle-detection pipeline together with logging enablement and launch-source compatibility handling.
 - Added launch and service helpers to simplify starting, monitoring, and stopping the full visual obstacle detection system from shell and systemd environments.
+- Added `visual_obstacle_detection/visual_obstacle_detection/ground_plane_detection.py`, a node that fuses a downward rangefinder and IMU orientation into a ground-plane `MarkerArray` on `/ground_plane_detection/markers` for RViz2 visualization, registered as the `ground_plane_detection` console script.
+
+### Changed
+- Added throttled logging to `ground_plane_detection.py`: a `WARN` every 5s while rangefinder/IMU data is missing, and an `INFO` on each successful marker publish, to make topic/data issues visible without silent no-op behavior.
 
 ### Changed
 - Updated the obstacle detection node in `visual_obstacle_detection/visual_obstacle_detection/obstacle_detection.py` to use the `verbose` parameter for heartbeat and callback logging, reducing noisy default output while preserving detailed diagnostics when needed.
