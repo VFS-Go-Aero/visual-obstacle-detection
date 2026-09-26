@@ -110,7 +110,7 @@ class GroundPlane(Node):
         array = MarkerArray()
         array.markers.append(plane)
         self._pub.publish(array)
-        self.get_logger().debug(
+        self.get_logger().info(
             f"published ground plane at ({plane_point[0]:.2f}, {plane_point[1]:.2f}, {plane_point[2]:.2f})",
             throttle_duration_sec=1.0,
         )
