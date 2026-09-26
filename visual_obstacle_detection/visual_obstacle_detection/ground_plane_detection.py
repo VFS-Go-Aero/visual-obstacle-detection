@@ -83,6 +83,10 @@ class GroundPlane(Node):
 
     def _publish(self):
         if self._range is None or self._quat is None:
+            self.get_logger().warn(
+                f"waiting for data (range={self._range is not None}, imu={self._quat is not None})",
+                throttle_duration_sec=5.0,
+            )
             return
 
         rot = _quat_to_rotmat(*self._quat)
@@ -106,6 +110,10 @@ class GroundPlane(Node):
         array = MarkerArray()
         array.markers.append(plane)
         self._pub.publish(array)
+        self.get_logger().debug(
+            f"published ground plane at ({plane_point[0]:.2f}, {plane_point[1]:.2f}, {plane_point[2]:.2f})",
+            throttle_duration_sec=1.0,
+        )
 
 
 def main():
