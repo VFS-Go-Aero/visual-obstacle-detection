@@ -65,7 +65,10 @@ class GroundPlane(Node):
 
         self._pub = self.create_publisher(MarkerArray, "/ground_plane_detection/markers", 10)
         self.create_subscription(
-            Range, str(self.get_parameter("rangefinder_topic").value), self._cb_range, qos_profile_sensor_data
+            Range,
+            str(self.get_parameter("rangefinder_topic").value),
+            self._cb_range,
+            qos_profile_sensor_data,
         )
         self.create_subscription(
             Imu, str(self.get_parameter("imu_topic").value), self._cb_imu, qos_profile_sensor_data
@@ -83,8 +86,10 @@ class GroundPlane(Node):
 
     def _publish(self):
         if self._range is None or self._quat is None:
+            has_range = self._range is not None
+            has_imu = self._quat is not None
             self.get_logger().warn(
-                f"waiting for data (range={self._range is not None}, imu={self._quat is not None})",
+                f"waiting for data (range={has_range}, imu={has_imu})",
                 throttle_duration_sec=5.0,
             )
             return
@@ -102,7 +107,9 @@ class GroundPlane(Node):
         plane.id = 0
         plane.type = Marker.CUBE
         plane.action = Marker.ADD
-        plane.pose.position = PointMsg(x=float(plane_point[0]), y=float(plane_point[1]), z=float(plane_point[2]))
+        plane.pose.position = PointMsg(
+            x=float(plane_point[0]), y=float(plane_point[1]), z=float(plane_point[2])
+        )
         plane.pose.orientation = Quaternion(x=qx, y=qy, z=qz, w=qw)
         plane.scale = Vector3(x=self._plane_size, y=self._plane_size, z=0.02)
         plane.color = ColorRGBA(r=0.2, g=0.8, b=0.2, a=0.6)
@@ -111,7 +118,8 @@ class GroundPlane(Node):
         array.markers.append(plane)
         self._pub.publish(array)
         self.get_logger().info(
-            f"published ground plane at ({plane_point[0]:.2f}, {plane_point[1]:.2f}, {plane_point[2]:.2f})",
+            f"published ground plane at "
+            f"({plane_point[0]:.2f}, {plane_point[1]:.2f}, {plane_point[2]:.2f})",
             throttle_duration_sec=1.0,
         )
 
