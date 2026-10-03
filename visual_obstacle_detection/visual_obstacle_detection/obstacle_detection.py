@@ -12,10 +12,13 @@ from std_msgs.msg import Header
 
 
 # ── sector-map config ─────────────────────────────────────────────────────────
-N_AZ = 8     # azimuth bins   (360 / 8 = 45° each)
-N_EL = 8     # elevation bins (180 / 8 = 45° each)
+N_AZ = 32     # azimuth bins   (360 / 32 = 11.25° each)
+N_EL = 8     # elevation bins (180 / 8 = 22.5° each)
 DIST_BIN_W = 0.1    # distance shell width (metres)
 MIN_POINTS = 100      # min points in a shell to count as a real obstacle
+DIST_EMA_ALPHA = 0.3    # EMA factor for per-sector distance
+SECTOR_MAX_AGE_SEC = 0.3    # stale-sector timeout in seconds
+SECTOR_DISTANCE_TOL = 0.25    # distance hysteresis threshold in metres
 # ─────────────────────────────────────────────────────────────────────────────
 
 
@@ -29,24 +32,28 @@ def build_sector_map(points: np.ndarray,
 
     Divide the point cloud into angular sectors and, for each sector, find
     the near edge of the first distance-bin that contains >= min_pts points.
+    The reported obstacle point is placed at the sector's angular center,
+    at the distance of the closest point inside that dense bin.
 
     Returns
     -------
-    winner_mask : bool array, shape (N,)
-        True for every point that is the reported obstacle representative of
-        its sector (i.e. the closest point inside the first dense bin).
+    obstacle_points : float array, shape (M, 3)
+        One representative xyz point per winning sector, centered on the
+        sector's azimuth/elevation midpoint at the detected obstacle distance.
+    obstacle_sectors : uint32 array, shape (M,)
+        Sector id (a * n_el + e) for each entry in obstacle_points.
 
     """
     if points.shape[0] == 0:
-        return np.zeros(0, dtype=bool), np.zeros(0, dtype=np.uint32)
+        return np.zeros((0, 3), dtype=np.float32), np.zeros(0, dtype=np.uint32)
 
     # drop NaN and zero-distance points
     finite_mask = np.isfinite(points).all(axis=1)
     dists = np.linalg.norm(points, axis=1)
-    valid = finite_mask & (dists > 0)
+    valid = finite_mask & (dists > 0) & (dists <= 6.0)
 
     if not np.any(valid):
-        return np.zeros(len(points), dtype=bool), np.zeros(len(points), dtype=np.uint32)
+        return np.zeros((0, 3), dtype=np.float32), np.zeros(0, dtype=np.uint32)
 
     dirs = np.zeros_like(points)
     dirs[valid] = points[valid] / dists[valid, np.newaxis]
@@ -57,8 +64,11 @@ def build_sector_map(points: np.ndarray,
     az_idx = ((az + np.pi) / (2 * np.pi) * n_az).astype(int) % n_az
     el_idx = ((el + np.pi / 2) / np.pi * n_el).astype(int).clip(0, n_el - 1)
 
-    winner_mask = np.zeros(len(points), dtype=bool)
-    winner_sector = np.zeros(len(points), dtype=np.uint32)
+    az_bin_w = 2 * np.pi / n_az
+    el_bin_w = np.pi / n_el
+
+    obstacle_points = []
+    obstacle_sectors = []
 
     for a in range(n_az):
         for e in range(n_el):
@@ -67,7 +77,6 @@ def build_sector_map(points: np.ndarray,
                 continue
 
             sector_dists = dists[mask]
-            sector_indices = np.where(mask)[0]
 
             max_d = sector_dists.max()
             if not np.isfinite(max_d) or max_d <= 0:
@@ -79,15 +88,26 @@ def build_sector_map(points: np.ndarray,
             for b in range(len(bin_edges) - 1):
                 in_bin = bin_ids == b
                 if in_bin.sum() >= min_pts:
-                    pts_in_bin = sector_indices[in_bin]
-                    closest = pts_in_bin[np.argmin(sector_dists[in_bin])]
-                    winner_mask[closest] = True
-                    sector_id = a * n_el + e
-                    winner_sector[closest] = sector_id
+                    closest_dist = sector_dists[in_bin].min()
+
+                    az_center = -np.pi + (a + 0.5) * az_bin_w
+                    el_center = -np.pi / 2 + (e + 0.5) * el_bin_w
+                    center_dir = np.array([
+                        np.cos(el_center) * np.cos(az_center),
+                        np.cos(el_center) * np.sin(az_center),
+                        np.sin(el_center),
+                    ])
+
+                    obstacle_points.append(center_dir * closest_dist)
+                    obstacle_sectors.append(a * n_el + e)
                     break
             # no bin reached threshold → sector is clear, no winner
 
-    return winner_mask, winner_sector
+    if not obstacle_points:
+        return np.zeros((0, 3), dtype=np.float32), np.zeros(0, dtype=np.uint32)
+
+    return (np.asarray(obstacle_points, dtype=np.float32),
+            np.asarray(obstacle_sectors, dtype=np.uint32))
 
 
 class ObstacleDetection(Node):
@@ -106,20 +126,22 @@ class ObstacleDetection(Node):
         self._zero_obs_streak = 0
         self._frame_mismatch_count = 0
         self._last_n_obs = None
+        self._sector_state = {}
+        self._last_stamp_sec = None
         self._health_timer = self.create_timer(5.0, self._health_check)
 
         # publish only the obstacle-representative points (red)
         self.pub = self.create_publisher(
             PointCloud2,
             "/merged_cloud/obstacles",
-            10,
+            1,
         )
 
         self._sub_merged = self.create_subscription(
             PointCloud2,
             "/merged_cloud",
             self._cb_merged,
-            10,
+            1,
         )
 
         self.get_logger().info(
@@ -133,31 +155,18 @@ class ObstacleDetection(Node):
 
     def _parse(self, msg: PointCloud2) -> np.ndarray:
         try:
-            structured = np.array(
-                list(pc2.read_points(msg, field_names=("x", "y", "z"), skip_nans=True))
+            points = pc2.read_points_numpy(
+                msg,
+                field_names=("x", "y", "z"),
+                skip_nans=True,
             )
         except Exception as exc:
             self.get_logger().error(f"PointCloud parse failed: {exc}")
             return np.empty((0, 3), dtype=np.float32)
 
-        if structured.size == 0:
+        if points.size == 0:
             return np.empty((0, 3), dtype=np.float32)
-
-        if structured.dtype.names is None:
-            # Some sensor_msgs_py versions return plain tuples instead of named fields.
-            arr = np.asarray(structured, dtype=np.float32)
-            if arr.ndim == 1:
-                arr = arr.reshape(1, -1)
-            if arr.shape[1] < 3:
-                self.get_logger().error(
-                    f"Unexpected parsed point shape={arr.shape}; expected (?, >=3)"
-                )
-                return np.empty((0, 3), dtype=np.float32)
-            return arr[:, :3]
-
-        return np.column_stack(
-            [structured["x"], structured["y"], structured["z"]]
-        ).astype(np.float32)
+        return np.asarray(points, dtype=np.float32).reshape(-1, 3)
 
     # ── callbacks ─────────────────────────────────────────────────────────────
 
@@ -205,24 +214,88 @@ class ObstacleDetection(Node):
                     f"(count={self._empty_parse_count}, rx_count={self._rx_count})"
                 )
 
+        # Use the ZED capture stamp so sector aging tracks sensor time.
+        self._last_stamp_sec = msg.header.stamp.sec + msg.header.stamp.nanosec * 1e-9
         self._detect_and_publish()
 
     # ── detection + publish ───────────────────────────────────────────────────
+
+    def _smooth_distances(self, points: np.ndarray, sectors: np.ndarray):
+        """Hold sectors by capture time through brief input dropouts."""
+        state = self._sector_state
+        now = self._last_stamp_sec
+        if not now:
+            # An unset capture stamp cannot support time-based aging.
+            state.clear()
+            return points, sectors
+
+        current_ids = set()
+        filtered_points = []
+        filtered_sectors = []
+
+        for p, sector_id in zip(points, sectors):
+            sid = int(sector_id)
+            current_ids.add(sid)
+            dist = float(np.linalg.norm(p))
+            if dist <= 0:
+                continue
+
+            direction = p / dist
+            prev_state = state.get(sid)
+            prev_dist = float(prev_state["dist"]) if prev_state is not None else dist
+
+            if prev_state is None or dist < prev_dist:
+                # obstacle got closer (or first sighting) → trust it immediately, no lag
+                new_dist = dist
+            elif abs(dist - prev_dist) <= SECTOR_DISTANCE_TOL:
+                new_dist = prev_dist + DIST_EMA_ALPHA * (dist - prev_dist)
+            else:
+                new_dist = prev_dist + 0.35 * (dist - prev_dist)
+
+            state[sid] = {
+                "dist": new_dist,
+                "dir": direction,
+                "last_seen": now,
+            }
+            filtered_points.append(direction * new_dist)
+            filtered_sectors.append(sid)
+
+        # keep stale sectors alive briefly, then expire them in bulk once their hold time elapses
+        to_drop = []
+        for sid, s in list(state.items()):
+            if sid in current_ids:
+                continue
+            if now - s["last_seen"] > SECTOR_MAX_AGE_SEC:
+                to_drop.append(sid)
+            else:
+                filtered_points.append(s["dir"] * s["dist"])
+                filtered_sectors.append(sid)
+
+        for sid in to_drop:
+            del state[sid]
+
+        if not filtered_points:
+            return np.zeros((0, 3), dtype=np.float32), np.zeros(0, dtype=np.uint32)
+
+        return (np.asarray(filtered_points, dtype=np.float32),
+                np.asarray(filtered_sectors, dtype=np.uint32))
 
     def _detect_and_publish(self) -> None:
         if self.cloud.shape[0] == 0:
             self._empty_detect_count += 1
             if self._empty_detect_count <= 10 or self._empty_detect_count % 20 == 0:
                 self.get_logger().warning(
-                    "Skipping detect/publish because cloud is empty "
+                    "Cloud is empty this frame, publishing held sector state instead "
                     f"(count={self._empty_detect_count})"
                 )
-            return
+            obstacle_points = np.zeros((0, 3), dtype=np.float32)
+            obstacle_sectors = np.zeros(0, dtype=np.uint32)
+        else:
+            obstacle_points, obstacle_sectors = build_sector_map(self.cloud)
 
-        winner_mask, winner_sector = build_sector_map(self.cloud)
-
-        obstacle_points = self.cloud[winner_mask]
-        obstacle_sectors = winner_sector[winner_mask]
+        obstacle_points, obstacle_sectors = self._smooth_distances(
+            obstacle_points, obstacle_sectors
+        )
 
         n_obs = obstacle_points.shape[0]
 
