@@ -4,7 +4,9 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=~/ros2_ws/src/visual-obstacle-detection/scripts/launch.sh
+User=user
+ExecStart=/bin/bash -c "source /opt/ros/humble/setup.bash && source /home/user/ros2_ws/install/setup.bash && exec /home/user/ros2_ws/src/visual-obstacle-detection/scripts/launch.sh rviz:=false"
+ExecStop=/bin/bash -c "source /opt/ros/humble/setup.bash && source /home/user/ros2_ws/install/setup.bash && ros2 run launch_files stop"
 Restart=on-failure
 
 [Install]

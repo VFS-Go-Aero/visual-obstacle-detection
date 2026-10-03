@@ -1,10 +1,11 @@
-"""Wait until a topic publishes a message, then exit 0 (or 1 on timeout).
+"""
+Wait until a topic publishes a message, then exit 0 (or 1 on timeout).
 
-    ros2 run startup_launcher wait_for_topic /merged_cloud --timeout 30
-    ros2 run startup_launcher wait_for_topic /mavros/state --timeout 40 \
+    ros2 run launch_files wait_for_topic /merged_cloud --timeout 30
+    ros2 run launch_files wait_for_topic /mavros/state --timeout 40 \
         --field connected --equals True
 
-The bringup launch files chain boot steps on this node's exit code.
+launch_all.launch.py starts each boot step when this node exits.
 """
 import argparse
 import sys
@@ -16,8 +17,8 @@ from rosidl_runtime_py.utilities import get_message
 
 
 def field_value(msg, field):
-    """Return msg.<field>, where field may be dotted (e.g. 'header.frame_id')."""
-    for part in field.split('.'):
+    """Return msg.<field>, where field may be dotted (e.g. "header.frame_id")."""
+    for part in field.split("."):
         msg = getattr(msg, part)
     return msg
 
@@ -48,15 +49,15 @@ def wait_for_message(node, topic, timeout, field=None, equals=None):
 
 def main(argv=None):
     argv = rclpy.utilities.remove_ros_args(sys.argv if argv is None else argv)
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument('topic')
-    parser.add_argument('--timeout', type=float, default=30.0)
-    parser.add_argument('--field', help="message field to check, e.g. 'connected'")
-    parser.add_argument('--equals', help="required value of --field, e.g. 'True'")
+    parser = argparse.ArgumentParser(description=__doc__.strip().splitlines()[0])
+    parser.add_argument("topic")
+    parser.add_argument("--timeout", type=float, default=30.0)
+    parser.add_argument("--field", help="message field to check, e.g. 'connected'")
+    parser.add_argument("--equals", help="required value of --field, e.g. 'True'")
     args = parser.parse_args(argv[1:])
 
     rclpy.init()
-    node = rclpy.create_node('wait_for_topic')
+    node = rclpy.create_node("wait_for_topic")
     try:
         ok = wait_for_message(node, args.topic, args.timeout, args.field, args.equals)
     except KeyboardInterrupt:
@@ -65,10 +66,10 @@ def main(argv=None):
         node.destroy_node()
         rclpy.try_shutdown()
 
-    what = args.topic + (f' ({args.field} == {args.equals})' if args.field else '')
-    print(f"{'OK' if ok else 'TIMEOUT'}: {what}", flush=True)
+    what = args.topic + (f" ({args.field} == {args.equals})" if args.field else "")
+    print(f"{"OK" if ok else "TIMEOUT"}: {what}", flush=True)
     sys.exit(0 if ok else 1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

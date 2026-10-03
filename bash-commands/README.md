@@ -1,5 +1,22 @@
 # bash-commands
 
+## Full System
+
+**Start** (with RViz)
+```bash
+ros2 launch launch_files launch_all.launch.py
+```
+
+**Start without RViz** (flight test: if any check fails, it prints NOT SAFE TO FLY and shuts down)
+```bash
+ros2 launch launch_files launch_all.launch.py rviz:=false
+```
+
+**Stop everything**
+```bash
+ros2 run launch_files stop
+```
+
 ## Tegrastats Logger
 ```bash
 tegrastats --interval 1000 --logfile ~/Desktop/tegrastats_$(date +"%Y%m%d_%H%M%S").log

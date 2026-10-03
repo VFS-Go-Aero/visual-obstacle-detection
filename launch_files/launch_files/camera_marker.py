@@ -1,4 +1,5 @@
-"""Orange sphere on the camera frame so you can see where the camera is in RViz.
+"""
+Sphere marker on the camera frame so you can see where the camera is in RViz.
 
 Same as the old one-liner:
     ros2 topic pub -r 2 /camera_marker visualization_msgs/msg/Marker "{... zed1_camera_link ...}"
@@ -11,13 +12,13 @@ from visualization_msgs.msg import Marker
 class CameraMarker(Node):
 
     def __init__(self):
-        super().__init__('camera_marker')
-        frame_id = self.declare_parameter('frame_id', 'zed1_camera_link').value
-        self.pub = self.create_publisher(Marker, '/camera_marker', 10)
+        super().__init__("camera_marker")
+        frame_id = self.declare_parameter("frame_id", "zed1_camera_link").value
+        self.pub = self.create_publisher(Marker, "/camera_marker", 10)
 
         self.marker = Marker()
         self.marker.header.frame_id = frame_id
-        self.marker.ns = 'cam'
+        self.marker.ns = "cam"
         self.marker.id = 0
         self.marker.type = Marker.SPHERE
         self.marker.action = Marker.ADD
@@ -44,5 +45,5 @@ def main():
         rclpy.try_shutdown()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

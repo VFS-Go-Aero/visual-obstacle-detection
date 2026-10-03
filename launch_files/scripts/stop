@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# stop  -  Stop EVERYTHING the drone stack runs (startup_launcher launches, old vfs_*.sh scripts, or leftovers typed by hand).
+# stop  -  Stop everything the system runs (launch_all, or leftovers started by hand).
 #
-#   ros2 run startup_launcher stop
+#   ros2 run launch_files stop
 #
 # Order: polite Ctrl+C -> wait up to 10 s -> TERM -> KILL for anything still alive.
 # Does NOT touch the ZED system daemon (ZEDX_Daemon) or the ros2 daemon.
@@ -14,9 +14,10 @@ PATTERNS=(   # matched against INSTALLED program paths, so editors/greps mention
     "install/visual_obstacle_detection/lib/"              # point_cloud, obstacle_detection, obstacle_to_mavlink
     "lib/latency_logger/" "bin/ros2 run latency_logger"   # loggers
     "lib/rviz2/rviz2" "^rviz2( |$)"                       # RViz (launched as a node, or typed by hand)
-    "topic pub -r 2 /camera_marker"                       # orange sphere (old one-liner)
-    "lib/startup_launcher/camera_marker"                  # orange sphere (startup_launcher)
-    "lib/startup_launcher/wait_for_topic"                 # startup health checks
+    "topic pub -r 2 /camera_marker"                       # camera marker (old one-liner)
+    "lib/launch_files/camera_marker"                      # RViz camera marker
+    "lib/launch_files/wait_for_topic"                     # startup health checks
+    "lib/launch_files/drone_pose"                         # drone pose publisher
     "bin/ros2 launch"                                     # leftover launch parents
 )
 
@@ -33,7 +34,7 @@ if [ -z "$(alive)" ]; then
     exit 0
 fi
 
-# 1. Ctrl+C (SIGINT) to anything matching (also catches things started by hand or by launch.sh)
+# 1. Ctrl+C (SIGINT) to anything matching (also catches things started by hand)
 signal_all INT
 
 # 2. Give it up to 10 s to shut down cleanly

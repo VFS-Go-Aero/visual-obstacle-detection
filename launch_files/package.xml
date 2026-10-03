@@ -16,6 +16,10 @@
   <depend>tf2_ros</depend>
   <depend>launch</depend>
   <depend>launch_ros</depend>
+  <depend>launch_xml</depend>
+  <depend>ament_index_python</depend>
+  <depend>rosidl_runtime_py</depend>
+  <depend>visualization_msgs</depend>
   <exec_depend>python3-numpy</exec_depend>
 
   <test_depend>ament_copyright</test_depend>

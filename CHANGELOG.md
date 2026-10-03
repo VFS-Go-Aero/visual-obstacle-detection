@@ -8,9 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Added `launch_files/launch_files/wait_for_topic.py` (`wait_for_topic`), which waits for a topic (optionally a field value) and exits 0 or 1, and `launch_files/launch_files/camera_marker.py` (`camera_marker`), a sphere marker on `zed1_camera_link` for RViz.
+- Added `ros2 run launch_files stop`, which stops everything the system runs (Ctrl+C, then TERM, then KILL), including processes started by hand.
 - Added a full-system launch entry point in `launch_files/launch/launch_all.launch.py` to start MAVROS, the dual-ZED stack, and the obstacle-detection pipeline together with logging enablement and launch-source compatibility handling.
 - Added launch and service helpers to simplify starting, monitoring, and stopping the full visual obstacle detection system from shell and systemd environments.
 - Added `visual_obstacle_detection/visual_obstacle_detection/ground_plane_detection.py`, a node that fuses a downward rangefinder and IMU orientation into a ground-plane `MarkerArray` on `/ground_plane_detection/markers` for RViz2 visualization, registered as the `ground_plane_detection` console script.
+
+### Changed
+- Rewrote `launch_files/launch/launch_all.launch.py` to boot in order with a health check before each step (camera, then perception, then MAVROS, then RViz). Its only argument is `rviz` (default `true`). With `rviz:=false` (flight test), any failed check prints NOT SAFE TO FLY and shuts everything down; with RViz (ground test), it warns and keeps going. It uses one camera and MAVROS at `/dev/ttyACM0:57600`, and does not start the latency loggers.
+- Changed the `single_zed.launch.py` serial to `42203370`, the camera currently on the drone.
+- Replaced `scripts/launch.sh` with a wrapper around `launch_all.launch.py`, and fixed `scripts/visual-obstacle-detection.service` (absolute paths, ROS sourcing, `User=`, `ExecStop`).
+- Added `launch_files/setup.cfg` so console scripts install where `ros2 run` finds them.
+
+### Removed
+- Removed `scripts/fcu_launch.sh` and `scripts/stop_launch.sh`; use `launch_all.launch.py` and `ros2 run launch_files stop`.
 
 ### Changed
 - Added throttled logging to `ground_plane_detection.py`: a `WARN` every 5s while rangefinder/IMU data is missing, and an `INFO` on each successful marker publish, to make topic/data issues visible without silent no-op behavior.

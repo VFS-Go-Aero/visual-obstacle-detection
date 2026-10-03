@@ -12,6 +12,7 @@ setup(
         ("share/ament_index/resource_index/packages", ["resource/" + package_name]),
         ("share/" + package_name, ["package.xml"]),
         (os.path.join("share", package_name, "launch"), glob("launch/*.py")),
+        (os.path.join("lib", package_name), ["scripts/stop"]),
     ],
     install_requires=["setuptools"],
     zip_safe=True,
@@ -23,6 +24,8 @@ setup(
     entry_points={
         "console_scripts": [
             "drone_pose = launch_files.drone_pose:main",
+            "wait_for_topic = launch_files.wait_for_topic:main",
+            "camera_marker = launch_files.camera_marker:main",
         ],
     },
     url="https://github.com/VFS-Go-Aero/visual-obstacle-detection",
