@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# stop  -  Stop EVERYTHING the drone stack runs (startup_launcher launches, old vfs_*.sh scripts, or leftovers typed by hand).
+#
+#   ros2 run startup_launcher stop
+#
+# Order: polite Ctrl+C -> wait up to 10 s -> TERM -> KILL for anything still alive.
+# Does NOT touch the ZED system daemon (ZEDX_Daemon) or the ros2 daemon.
+
+PATTERNS=(   # matched against INSTALLED program paths, so editors/greps mentioning these names are safe
+    "lib/mavros/mavros_node"                              # MAVROS
+    "lib/zed_wrapper/zed_wrapper" "component_container"   # ZED camera nodes
+    "lib/robot_state_publisher/robot_state_publisher"     # camera TF chain
+    "lib/tf2_ros/static_transform_publisher"              # camera mounts
+    "install/visual_obstacle_detection/lib/"              # point_cloud, obstacle_detection, obstacle_to_mavlink
+    "lib/latency_logger/" "bin/ros2 run latency_logger"   # loggers
+    "lib/rviz2/rviz2" "^rviz2( |$)"                       # RViz (launched as a node, or typed by hand)
+    "topic pub -r 2 /camera_marker"                       # orange sphere (old one-liner)
+    "lib/startup_launcher/camera_marker"                  # orange sphere (startup_launcher)
+    "lib/startup_launcher/wait_for_topic"                 # startup health checks
+    "bin/ros2 launch"                                     # leftover launch parents
+)
+
+alive() {  # prints PIDs of anything still running
+    for p in "${PATTERNS[@]}"; do pgrep -f -- "$p"; done | sort -u
+}
+
+signal_all() {  # signal_all <INT|TERM|KILL>
+    for p in "${PATTERNS[@]}"; do pkill "-$1" -f -- "$p" 2>/dev/null; done
+}
+
+if [ -z "$(alive)" ]; then
+    echo "Nothing running."
+    exit 0
+fi
+
+# 1. Ctrl+C (SIGINT) to anything matching (also catches things started by hand or by launch.sh)
+signal_all INT
+
+# 2. Give it up to 10 s to shut down cleanly
+printf "Waiting for clean shutdown "
+for _ in $(seq 10); do
+    [ -z "$(alive)" ] && break
+    printf "."; sleep 1
+done
+echo
+
+# 3. Escalate if anything is stuck
+if [ -n "$(alive)" ]; then
+    echo "Still running, sending TERM..."
+    signal_all TERM; sleep 3
+fi
+if [ -n "$(alive)" ]; then
+    echo "Still running, sending KILL..."
+    signal_all KILL; sleep 1
+fi
+
+left="$(alive)"
+if [ -z "$left" ]; then
+    echo "All stopped."
+else
+    echo "Could not stop these PIDs (try with sudo):"
+    ps -o pid,cmd -p $(echo $left | tr ' ' ',')
+    exit 1
+fi
