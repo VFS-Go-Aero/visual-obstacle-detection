@@ -139,7 +139,7 @@ class ObstacleDetection(Node):
 
         self._sub_merged = self.create_subscription(
             PointCloud2,
-            "/merged_cloud",
+            "/merged_cloud/alligned",
             self._cb_merged,
             1,
         )
