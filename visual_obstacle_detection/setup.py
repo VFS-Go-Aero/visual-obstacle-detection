@@ -26,6 +26,7 @@ setup(
             "obstacle_detection = visual_obstacle_detection.obstacle_detection:main",
             "obstacle_to_mavlink = visual_obstacle_detection.obstacle_to_mavlink:main",
             "ground_plane_detection = visual_obstacle_detection.ground_plane_detection:main",
+            "pc_align = visual_obstacle_detection.pc_align:main",
         ],
     },
     url="https://github.com/VFS-Go-Aero/visual-obstacle-detection",

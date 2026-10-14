@@ -1,20 +1,13 @@
 #!/usr/bin/env python3
-"""Level a point cloud with respect to the ground plane.
+"""Rotate a point cloud against the drone's tilt, pivoting about the ground.
 
-Uses the same IMU-derived ground normal as ground_plane_detection.py. The
-cloud (in the drone's body frame, e.g. base_link) is rotated so that the
-ground plane becomes horizontal:
 
-  * drone pitched nose-down  -> the ground (tilted up in the body frame) is
-    rotated back down to flat, and the cloud moves with it.
-  * only roll/pitch is removed; heading (yaw) is left untouched, so the cloud
-    stays aligned with the drone's forward axis.
+Only roll/pitch are used; yaw is untouched. All point fields (e.g.
 
-Optionally the cloud is also shifted vertically so the ground sits at z = 0,
-using the downward rangefinder.
 
-All point fields (e.g. `obstacle_id` on /merged_cloud/obstacles) are preserved;
-only x, y, z are rewritten. NaNs and the cloud's width/height are kept as-is.
+`pitch_gain` scales the pitch correction (roll is always levelled normally).
+
+To change while code runs:  ros2 param set /pc_align pitch_gain 1.0 - this going to set it to default,
 """
 
 import math
@@ -50,12 +43,12 @@ def _quat_to_rotmat(x, y, z, w):
 
 
 def _rotation_from_to(v_from, v_to):
-    """Shortest-arc rotation matrix taking unit vector v_from onto v_to."""
+    
     a = v_from / np.linalg.norm(v_from)
     b = v_to / np.linalg.norm(v_to)
     c = float(np.dot(a, b))
     if c < -0.9999999:
-        # Antiparallel (drone upside down): rotate 180 deg about any axis normal to a.
+        
         axis = np.cross(a, np.array([1.0, 0.0, 0.0]))
         if np.linalg.norm(axis) < 1e-6:
             axis = np.cross(a, np.array([0.0, 1.0, 0.0]))
@@ -70,6 +63,23 @@ def _rotation_from_to(v_from, v_to):
     return np.eye(3) + vx + (vx @ vx) / (1.0 + c)
 
 
+def _scale_pitch(normal_body, gain):
+    """Return the ground normal with its pitch multiplied by `gain` (roll kept).
+
+    normal_body = (-sin p, cos p sin r, cos p cos r) for pitch p, roll r.
+    """
+    n = normal_body / np.linalg.norm(normal_body)
+    pitch = math.asin(max(-1.0, min(1.0, -n[0])))
+    roll = math.atan2(n[1], n[2])
+    limit = math.radians(89.0)
+    pitch = max(-limit, min(limit, gain * pitch))
+    return np.array([
+        -math.sin(pitch),
+        math.cos(pitch) * math.sin(roll),
+        math.cos(pitch) * math.cos(roll),
+    ])
+
+
 class PcAlign(Node):
     def __init__(self):
         super().__init__("pc_align")
@@ -78,19 +88,20 @@ class PcAlign(Node):
         self.declare_parameter("output_topic", "/merged_cloud/aligned")
         self.declare_parameter("imu_topic", "/mavros/imu/data")
         self.declare_parameter("rangefinder_topic", "/mavros/rangefinder/rangefinder")
-        # Shift the leveled cloud vertically so the ground is at z = 0.
-        self.declare_parameter("ground_at_origin", True)
         self.declare_parameter("beam_direction", [0.0, 0.0, -1.0])
         self.declare_parameter("mount_offset", [0.0, 0.0, 0.0])
+        # Pitch correction gain: 1.0 = level, 2.0 = pitch down with the camera tilt.
+        self.declare_parameter("pitch_gain", 2.0)
 
-        self._ground_at_origin = bool(self.get_parameter("ground_at_origin").value)
         beam_dir = np.array(self.get_parameter("beam_direction").value, dtype=np.float64)
         self._beam_dir = beam_dir / np.linalg.norm(beam_dir)
         self._mount_offset = np.array(self.get_parameter("mount_offset").value, dtype=np.float64)
+        self._pitch_gain = float(self.get_parameter("pitch_gain").value)
 
         self._quat = None
         self._range = None
         self._warned_no_imu = False
+        self._warned_no_range = False
         self._warned_fields = False
 
         self._pub = self.create_publisher(
@@ -109,7 +120,8 @@ class PcAlign(Node):
 
         self.get_logger().info(
             f"pc_align started [{self.get_parameter('input_topic').value} -> "
-            f"{self.get_parameter('output_topic').value}, ground_at_origin={self._ground_at_origin}]"
+            f"{self.get_parameter('output_topic').value}, "
+            f"pitch_gain={self._pitch_gain}]"
         )
 
     def _cb_imu(self, msg):
@@ -117,7 +129,8 @@ class PcAlign(Node):
         self._quat = (q.x, q.y, q.z, q.w)
 
     def _cb_range(self, msg):
-        self._range = msg.range
+        # inf/NaN (out of range) would turn the whole cloud into NaN.
+        self._range = msg.range if math.isfinite(msg.range) else None
 
     @staticmethod
     def _cloud_dtype(msg):
@@ -156,22 +169,36 @@ class PcAlign(Node):
 
         # Ground normal in the body frame = world "up" expressed in body coordinates.
         rot_body_to_world = _quat_to_rotmat(*self._quat)
-        normal_body = rot_body_to_world[2, :]
+        normal_body = rot_body_to_world[2, :].copy()
 
-        # Tilt-only rotation: ground normal -> +Z. Yaw is left alone.
-        r_level = _rotation_from_to(normal_body, np.array([0.0, 0.0, 1.0]))
+        # Scale only the pitch part of the ground normal. Read live so
+        # `ros2 param set /pc_align pitch_gain <x>` applies to the next cloud.
+        gain = float(self.get_parameter("pitch_gain").value)
+        if gain != self._pitch_gain:
+            self._pitch_gain = gain
+            self.get_logger().info(f"pitch_gain -> {gain}")
+        normal_body = _scale_pitch(normal_body, gain)
 
-        shift_z = 0.0
-        if self._ground_at_origin and self._range is not None:
-            ground_pt = self._mount_offset + self._range * self._beam_dir
-            shift_z = -float((r_level @ ground_pt)[2])
+        # Rotation that swings the (pitch-scaled) ground normal back to +Z.
+        rot = _rotation_from_to(normal_body, np.array([0.0, 0.0, 1.0]))
+
+        # Pivot: the ground point under the rangefinder, so the cloud's height
+        # above the ground does not change when it is rotated.
+        if self._range is not None:
+            pivot = self._mount_offset + self._range * self._beam_dir
+        else:
+            pivot = np.zeros(3)
+            if not self._warned_no_range:
+                self.get_logger().warning(
+                    "No valid rangefinder reading yet; rotating about the base_link origin"
+                )
+                self._warned_no_range = True
 
         n = msg.width * msg.height
         data = np.frombuffer(bytes(msg.data), dtype=dtype, count=n).copy()
 
         xyz = np.stack([data["x"], data["y"], data["z"]], axis=1).astype(np.float64)
-        xyz = xyz @ r_level.T
-        xyz[:, 2] += shift_z
+        xyz = (xyz - pivot) @ rot.T + pivot
 
         data["x"] = xyz[:, 0]
         data["y"] = xyz[:, 1]
