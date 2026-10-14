@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""Ground plane marker from a downward rangefinder + IMU, for RViz2.
-"""
+"""Ground plane marker from a downward rangefinder + IMU, for RViz2."""
 
 import math
 
@@ -93,7 +92,9 @@ class GroundPlane(Node):
                 depth=1,
             )
 
-        self._pub = self.create_publisher(MarkerArray, "/ground_plane_detection/markers", marker_qos)
+        self._pub = self.create_publisher(
+            MarkerArray, "/ground_plane_detection/markers", marker_qos
+        )
         self.create_subscription(
             Range,
             str(self.get_parameter("rangefinder_topic").value),

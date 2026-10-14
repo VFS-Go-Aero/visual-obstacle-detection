@@ -109,7 +109,8 @@ class PcAlign(Node):
 
         self.get_logger().info(
             f"pc_align started [{self.get_parameter('input_topic').value} -> "
-            f"{self.get_parameter('output_topic').value}, ground_at_origin={self._ground_at_origin}]"
+            f"{self.get_parameter('output_topic').value}, "
+            f"ground_at_origin={self._ground_at_origin}]"
         )
 
     def _cb_imu(self, msg):
