@@ -196,10 +196,17 @@ class PcAlign(Node):
                 self._warned_no_range = True
 
         n = msg.width * msg.height
-        data = np.frombuffer(bytes(msg.data), dtype=dtype, count=n).copy()
+        data = np.frombuffer(msg.data, dtype=dtype, count=n).copy()
 
-        xyz = np.stack([data["x"], data["y"], data["z"]], axis=1).astype(np.float64)
-        xyz = (xyz - pivot) @ rot.T + pivot
+        # Rotate in float32: the x/y/z fields are f4 and results are stored back
+        # into f4, so f64 math would add memory traffic without precision benefit.
+        # (f64 source fields would still promote back to f64 automatically.)
+        rot32 = rot.astype(np.float32)
+        pivot32 = pivot.astype(np.float32)
+        xyz = np.stack([data["x"], data["y"], data["z"]], axis=1)
+        xyz -= pivot32
+        xyz = xyz @ rot32.T
+        xyz += pivot32
 
         data["x"] = xyz[:, 0]
         data["y"] = xyz[:, 1]

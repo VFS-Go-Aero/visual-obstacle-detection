@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Changed `_detect_and_publish()` to always run the smoothing/hold step and publish, even when the incoming cloud is momentarily empty, instead of skipping publication entirely; this prevents held obstacles from being silently dropped and appearing to blank out downstream during brief input gaps.
 - Changed the `/merged_cloud` subscription in `obstacle_detection.py` to `/merged_cloud/aligned` so sector detection operates on the tilt-corrected cloud published by `pc_align`.
 - Updated the `zed1` serial number in `launch_files/launch/multi_zed.launch.py` to `42203370` to match the current camera hardware.
+- Optimized the cloud rotation in `pc_align.py` to run in float32 with in-place pivot subtraction/addition instead of float64 temporaries, cutting per-frame memory traffic roughly 5× for the alignment math; no functional change for float32 clouds (rounding stays orders of magnitude below sensor noise), and float64 source fields still promote to float64 automatically.
 
 ### Removed
 - Removed the throttled waiting-for-data `WARN` and per-publish `INFO` logging from `ground_plane_detection.py` to keep the node silent during normal operation.
