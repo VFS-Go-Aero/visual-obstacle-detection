@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Launch two ZED cameras with explicit static transforms from base_link."""
+"""Launch the connected ZED camera as zed2 with an explicit base_link transform."""
 
 import os
 
@@ -12,25 +12,12 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
-    """Build a launch description for dual ZED setup with explicit TF ownership."""
+    """Build a single-camera launch description with explicit TF ownership."""
     camera_pitch_up = LaunchConfiguration("camera_pitch_up")
     zed_launch = os.path.join(
         get_package_share_directory("zed_wrapper"),
         "launch",
         "zed_camera.launch.py"
-    )
-
-    zed1 = IncludeLaunchDescription(
-        launch_description_source=PythonLaunchDescriptionSource(zed_launch),
-        launch_arguments={
-            "camera_name": "zed1",
-            "camera_model": "zedx",
-            "serial_number": "42203370",
-            "publish_tf": "false",
-            "publish_map_tf": "false",
-            "pub_frame_rate": "15.0",
-            "log_level": "info",
-        }.items(),
     )
 
     zed2 = IncludeLaunchDescription(
@@ -46,20 +33,7 @@ def generate_launch_description():
         }.items(),
     )
 
-    # Static extrinsics from drone body frame to each camera root frame.
-    # Update these values after camera calibration.
-    base_to_zed1 = Node(
-        package="tf2_ros",
-        executable="static_transform_publisher",
-        name="base_to_zed1_tf",
-        arguments=[
-            "0.1524", "0.0", "-0.127",
-            "0.0", "0.0", "0.0",
-            "base_link",
-            "zed1_camera_link",
-        ],
-    )
-
+    # Static extrinsics from drone body frame to the connected camera.
     base_to_zed2 = Node(
         package="tf2_ros",
         executable="static_transform_publisher",
@@ -80,8 +54,6 @@ def generate_launch_description():
             default_value="0.0",
             description="Physical upward camera tilt in radians; converted to negative ROS pitch.",
         ),
-        zed1,
         zed2,
-        base_to_zed1,
         base_to_zed2,
     ])
