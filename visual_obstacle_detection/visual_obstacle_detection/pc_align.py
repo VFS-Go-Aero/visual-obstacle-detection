@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Rotate a point cloud against the drone's tilt, pivoting about the ground.
+"""
+Rotate a point cloud against the drone's tilt, pivoting about the ground.
 
 Only roll/pitch are used; yaw is untouched. All point fields (e.g.
 
@@ -63,7 +64,8 @@ def _rotation_from_to(v_from, v_to):
 
 
 def _scale_pitch(normal_body, gain):
-    """Return the ground normal with its pitch multiplied by `gain` (roll kept).
+    """
+    Return the ground normal with its pitch multiplied by `gain` (roll kept).
 
     normal_body = (-sin p, cos p sin r, cos p cos r) for pitch p, roll r.
     """
