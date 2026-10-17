@@ -11,9 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added a full-system launch entry point in `launch_files/launch/launch_all.launch.py` to start MAVROS, the dual-ZED stack, and the obstacle-detection pipeline together with logging enablement and launch-source compatibility handling.
 - Added launch and service helpers to simplify starting, monitoring, and stopping the full visual obstacle detection system from shell and systemd environments.
 - Added `visual_obstacle_detection/visual_obstacle_detection/ground_plane_detection.py`, a node that fuses a downward rangefinder and IMU orientation into a ground-plane `MarkerArray` on `/ground_plane_detection/markers` for RViz2 visualization, registered as the `ground_plane_detection` console script.
-
-### Changed
-- Added throttled logging to `ground_plane_detection.py`: a `WARN` every 5s while rangefinder/IMU data is missing, and an `INFO` on each successful marker publish, to make topic/data issues visible without silent no-op behavior.
+- Added `visual_obstacle_detection/visual_obstacle_detection/pc_align.py`, a node that rotates the merged point cloud against the drone's roll/pitch (yaw untouched) using IMU orientation, pivoting about the rangefinder ground point so cloud height above ground is preserved; subscribes to `/merged_cloud` and publishes the levelled cloud on `/merged_cloud/aligned`. Includes a runtime-tunable `pitch_gain` parameter (`ros2 param set /pc_align pitch_gain <x>`) that scales the pitch correction (1.0 = fully level, 2.0 = pitch down with the camera tilt) while roll is always levelled. Registered as the `pc_align` console script and added to `visual_obstacle_detection/launch/visual_obstacle_detection.launch.py`.
+- Added a `camera_pitch_up` launch argument to `launch_files/launch/multi_zed.launch.py` (default `0.0`) to apply the physical upward camera tilt as negative ROS pitch on the `base_link` → `zed2_camera_link` static transform.
 
 ### Changed
 - Updated the obstacle detection node in `visual_obstacle_detection/visual_obstacle_detection/obstacle_detection.py` to use the `verbose` parameter for heartbeat and callback logging, reducing noisy default output while preserving detailed diagnostics when needed.
@@ -24,6 +23,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated `build_sector_map()` in `visual_obstacle_detection/visual_obstacle_detection/obstacle_detection.py` to report each obstacle point at its sector's angular center (using the closest in-bin point's distance) instead of the raw winning point's position, giving rangefinder-style, sector-aligned output.
 - Added per-sector temporal filtering to `obstacle_detection.py` to reduce output flicker: an asymmetric distance filter (`SECTOR_DISTANCE_TOL`, `DIST_EMA_ALPHA`) that snaps immediately to closer readings but smooths/dampens readings that get farther, plus a time-based hold (`SECTOR_MAX_AGE_SEC`) keyed off each `/merged_cloud` message's own `header.stamp` so a sector survives brief detection dropouts without expiring based on local processing/wall-clock jitter.
 - Changed `_detect_and_publish()` to always run the smoothing/hold step and publish, even when the incoming cloud is momentarily empty, instead of skipping publication entirely; this prevents held obstacles from being silently dropped and appearing to blank out downstream during brief input gaps.
+- Changed the `/merged_cloud` subscription in `obstacle_detection.py` to `/merged_cloud/aligned` so sector detection operates on the tilt-corrected cloud published by `pc_align`.
+- Updated the `zed1` serial number in `launch_files/launch/multi_zed.launch.py` to `42203370` to match the current camera hardware.
+
+### Removed
+- Removed the throttled waiting-for-data `WARN` and per-publish `INFO` logging from `ground_plane_detection.py` to keep the node silent during normal operation.
 
 ## [1.0.0] - 2026-05-05
 
