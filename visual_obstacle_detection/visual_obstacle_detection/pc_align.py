@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 """Rotate a point cloud against the drone's tilt, pivoting about the ground.
 
-
 Only roll/pitch are used; yaw is untouched. All point fields (e.g.
-
 
 `pitch_gain` scales the pitch correction (roll is always levelled normally).
 
-To change while code runs:  ros2 param set /pc_align pitch_gain 1.0 - this going to set it to default,
+To change while code runs: ros2 param set /pc_align pitch_gain 1.0
+- this going to set it to default,
 """
 
 import math
@@ -43,12 +42,12 @@ def _quat_to_rotmat(x, y, z, w):
 
 
 def _rotation_from_to(v_from, v_to):
-    
+
     a = v_from / np.linalg.norm(v_from)
     b = v_to / np.linalg.norm(v_to)
     c = float(np.dot(a, b))
     if c < -0.9999999:
-        
+
         axis = np.cross(a, np.array([1.0, 0.0, 0.0]))
         if np.linalg.norm(axis) < 1e-6:
             axis = np.cross(a, np.array([0.0, 1.0, 0.0]))
