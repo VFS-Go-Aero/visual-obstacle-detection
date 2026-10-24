@@ -3,7 +3,7 @@ set -euo pipefail
 
 SESSION="fcu-monitor"
 DIRECTORY="$HOME"
-COMMAND="fcu-launch"
+COMMAND="fcu_launch"
 
 if ! tmux has-session -t "=$SESSION" 2>/dev/null; then
     PANE=$(tmux new-session -d -s "$SESSION" -c "$DIRECTORY" \
