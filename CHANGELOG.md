@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-28
+
+### Added
+- Added `ground_plane_detection`, which combines the rangefinder distance and IMU orientation to place and orient a configurable-size ground-plane marker in `base_link`, published as a `MarkerArray` on `/ground_plane_detection/markers`.
+- Added `pc_align`, which derives the ground normal from IMU orientation and rotates the cloud to align that normal with +Z. It pivots around the rangefinder ground point (falling back to the `base_link` origin when no valid range is available), leaves yaw unchanged, and preserves non-coordinate point fields. The live `pitch_gain` parameter scales pitch correction while roll is fully corrected; aligned clouds publish on `/merged_cloud/aligned`. Both nodes are included in the detection launch pipeline.
+- Added tmux session launchers for FCU monitoring, latency logging, visual obstacle detection, and ZED startup, plus an FCU command to launch MAVROS.
+
+### Changed
+- Refined obstacle detection to divide the cloud into 32 azimuth by 8 elevation sectors, reject points beyond 6 m, and scan each sector's 10 cm distance shells from near to far. The first shell containing at least 100 points qualifies; output is one representative at the sector center and the nearest range in that shell, tagged with its sector ID.
+- Added per-sector distance stabilization: closer readings apply immediately, increases are smoothed, and missing sectors are retained for up to 0.3 s based on the cloud capture timestamp. Detection consumes `/merged_cloud/aligned` and continues publishing held sectors during empty-cloud frames.
+- Reduced point-cloud processing overhead by using NumPy point parsing and reducing point-cloud subscription queues to one message.
+- Updated ZED launch configurations to use camera serial `42203370`, expose `camera_pitch_up` as a static-transform adjustment, and launch the connected camera as `zed2` in single-camera setups.
+
+### Fixed
+- Guarded distance diagnostics for empty point clouds, reporting `n/a` instead of attempting minimum/maximum reductions on an empty array.
+
 ## [1.0.0] - 2026-05-05
 
 ### Added

@@ -25,6 +25,18 @@ def generate_launch_description() -> LaunchDescription:
             ),
             Node(
                 package="visual_obstacle_detection",
+                executable="pc_align",
+                name="pc_align",
+                output="screen",
+            ),
+            Node(
+                package="visual_obstacle_detection",
+                executable="ground_plane_detection",
+                name="ground_plane_detection",
+                output="screen",
+            ),
+            Node(
+                package="visual_obstacle_detection",
                 executable="obstacle_detection",
                 name="obstacle_detection",
                 output="screen",
