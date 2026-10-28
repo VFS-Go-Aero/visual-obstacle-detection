@@ -302,11 +302,19 @@ class ObstacleDetection(Node):
         if n_obs == 0:
             self._zero_obs_streak += 1
             if self._zero_obs_streak <= 10 or self._zero_obs_streak % 20 == 0:
-                d = np.linalg.norm(self.cloud, axis=1)
+                if self.cloud.shape[0] > 0:
+                    d = np.linalg.norm(self.cloud, axis=1)
+                    dist_text = (
+                        f"dist_min={np.min(d):.3f}, "
+                        f"dist_max={np.max(d):.3f}"
+                    )
+                else:
+                    dist_text = "dist_min=n/a, dist_max=n/a"
+
                 self.get_logger().warning(
                     "No obstacle representatives this frame "
                     f"(streak={self._zero_obs_streak}, pts={self.cloud.shape[0]}, "
-                    f"dist_min={np.min(d):.3f}, dist_max={np.max(d):.3f}, "
+                    f"{dist_text}, "
                     f"bin_w={DIST_BIN_W}, min_pts={MIN_POINTS}, sectors={N_AZ}x{N_EL})"
                 )
         else:

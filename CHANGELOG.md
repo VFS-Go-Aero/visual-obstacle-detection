@@ -18,6 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reduced point-cloud processing overhead by using NumPy point parsing and reducing point-cloud subscription queues to one message.
 - Updated ZED launch configurations to use camera serial `42203370`, expose `camera_pitch_up` as a static-transform adjustment, and launch the connected camera as `zed2` in single-camera setups.
 
+### Fixed
+- Guarded distance diagnostics for empty point clouds, reporting `n/a` instead of attempting minimum/maximum reductions on an empty array.
+
 ## [1.0.0] - 2026-05-05
 
 ### Added
