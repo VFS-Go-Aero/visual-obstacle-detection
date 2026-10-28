@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-28
+
 ### Added
 - Added `ground_plane_detection`, which combines the rangefinder distance and IMU orientation to place and orient a configurable-size ground-plane marker in `base_link`, published as a `MarkerArray` on `/ground_plane_detection/markers`.
 - Added `pc_align`, which derives the ground normal from IMU orientation and rotates the cloud to align that normal with +Z. It pivots around the rangefinder ground point (falling back to the `base_link` origin when no valid range is available), leaves yaw unchanged, and preserves non-coordinate point fields. The live `pitch_gain` parameter scales pitch correction while roll is fully corrected; aligned clouds publish on `/merged_cloud/aligned`. Both nodes are included in the detection launch pipeline.
