@@ -8,33 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Added a full-system launch entry point in `launch_files/launch/launch_all.launch.py` to start MAVROS, the dual-ZED stack, and the obstacle-detection pipeline together with logging enablement and launch-source compatibility handling.
-- Added launch and service helpers to simplify starting, monitoring, and stopping the full visual obstacle detection system from shell and systemd environments.
-- Added tmux session launchers in `scripts/session_launchers/` for FCU monitoring, latency logging, visual obstacle detection, and the single-ZED launch.
-- Added `visual_obstacle_detection/visual_obstacle_detection/ground_plane_detection.py`, a node that fuses a downward rangefinder and IMU orientation into a ground-plane `MarkerArray` on `/ground_plane_detection/markers` for RViz2 visualization, registered as the `ground_plane_detection` console script.
-- Added `visual_obstacle_detection/visual_obstacle_detection/pc_align.py`, a node that rotates the merged point cloud against the drone's roll/pitch (yaw untouched) using IMU orientation, pivoting about the rangefinder ground point so cloud height above ground is preserved; subscribes to `/merged_cloud` and publishes the levelled cloud on `/merged_cloud/aligned`. Includes a runtime-tunable `pitch_gain` parameter (`ros2 param set /pc_align pitch_gain <x>`) that scales the pitch correction (1.0 = fully level, 2.0 = pitch down with the camera tilt) while roll is always levelled. Registered as the `pc_align` console script and added to `visual_obstacle_detection/launch/visual_obstacle_detection.launch.py`.
-- Added the `ground_plane_detection` node to `visual_obstacle_detection/launch/visual_obstacle_detection.launch.py` so the ground-plane visualization starts with the rest of the pipeline.
-- Added a `camera_pitch_up` launch argument to `launch_files/launch/multi_zed.launch.py` (default `0.0`) to apply the physical upward camera tilt as negative ROS pitch on the `base_link` → `zed2_camera_link` static transform.
+- Added `ground_plane_detection`, which combines the rangefinder distance and IMU orientation to place and orient a configurable-size ground-plane marker in `base_link`, published as a `MarkerArray` on `/ground_plane_detection/markers`.
+- Added `pc_align`, which derives the ground normal from IMU orientation and rotates the cloud to align that normal with +Z. It pivots around the rangefinder ground point (falling back to the `base_link` origin when no valid range is available), leaves yaw unchanged, and preserves non-coordinate point fields. The live `pitch_gain` parameter scales pitch correction while roll is fully corrected; aligned clouds publish on `/merged_cloud/aligned`. Both nodes are included in the detection launch pipeline.
+- Added tmux session launchers for FCU monitoring, latency logging, visual obstacle detection, and ZED startup, plus an FCU command to launch MAVROS.
 
 ### Changed
-- Updated the obstacle detection node in `visual_obstacle_detection/visual_obstacle_detection/obstacle_detection.py` to use the `verbose` parameter for heartbeat and callback logging, reducing noisy default output while preserving detailed diagnostics when needed.
-- Tightened launch-file compatibility and source selection across ROS 2 Python/XML launch layouts so the integrated startup flow works reliably across supported distributions.
-- Added a maximum obstacle range of 6 metres to `build_sector_map()` in `obstacle_detection.py`, excluding farther points from sector detection.
-- Increased azimuth resolution in `obstacle_detection.py` from 8 to 32 bins (`N_AZ`), narrowing each sector from 45° to 11.25° for finer angular obstacle localization.
-- Reduced `/zed1`/`/zed2` point cloud subscription queue depth from 10 to 1 and switched cloud parsing in `point_cloud.py` and `obstacle_detection.py` to `read_points_numpy`/direct array construction instead of structured-array + `tolist()` conversion, reducing per-frame parsing latency.
-- Updated `build_sector_map()` in `visual_obstacle_detection/visual_obstacle_detection/obstacle_detection.py` to report each obstacle point at its sector's angular center (using the closest in-bin point's distance) instead of the raw winning point's position, giving rangefinder-style, sector-aligned output.
-- Added per-sector temporal filtering to `obstacle_detection.py` to reduce output flicker: an asymmetric distance filter (`SECTOR_DISTANCE_TOL`, `DIST_EMA_ALPHA`) that snaps immediately to closer readings but smooths/dampens readings that get farther, plus a time-based hold (`SECTOR_MAX_AGE_SEC`) keyed off each `/merged_cloud` message's own `header.stamp` so a sector survives brief detection dropouts without expiring based on local processing/wall-clock jitter.
-- Changed `_detect_and_publish()` to always run the smoothing/hold step and publish, even when the incoming cloud is momentarily empty, instead of skipping publication entirely; this prevents held obstacles from being silently dropped and appearing to blank out downstream during brief input gaps.
-- Changed the `/merged_cloud` subscription in `obstacle_detection.py` to `/merged_cloud/aligned` so sector detection operates on the tilt-corrected cloud published by `pc_align`.
-- Updated the `zed1` serial number in `launch_files/launch/multi_zed.launch.py` to `42203370` to match the current camera hardware.
-- Updated `launch_files/launch/single_zed.launch.py` to launch the connected ZED2 as `zed2` with explicit static transforms and a configurable `camera_pitch_up` argument.
-- Optimized the cloud rotation in `pc_align.py` to run in float32 with in-place pivot subtraction/addition instead of float64 temporaries, cutting per-frame memory traffic roughly 5× for the alignment math; no functional change for float32 clouds (rounding stays orders of magnitude below sensor noise), and float64 source fields still promote to float64 automatically.
-
-### Fixed
-- Corrected the FCU monitor session launcher to invoke the `fcu_launch` command.
-
-### Removed
-- Removed the throttled waiting-for-data `WARN` and per-publish `INFO` logging from `ground_plane_detection.py` to keep the node silent during normal operation.
+- Refined obstacle detection to divide the cloud into 32 azimuth by 8 elevation sectors, reject points beyond 6 m, and scan each sector's 10 cm distance shells from near to far. The first shell containing at least 100 points qualifies; output is one representative at the sector center and the nearest range in that shell, tagged with its sector ID.
+- Added per-sector distance stabilization: closer readings apply immediately, increases are smoothed, and missing sectors are retained for up to 0.3 s based on the cloud capture timestamp. Detection consumes `/merged_cloud/aligned` and continues publishing held sectors during empty-cloud frames.
+- Reduced point-cloud processing overhead by using NumPy point parsing and reducing point-cloud subscription queues to one message.
+- Updated ZED launch configurations to use camera serial `42203370`, expose `camera_pitch_up` as a static-transform adjustment, and launch the connected camera as `zed2` in single-camera setups.
 
 ## [1.0.0] - 2026-05-05
 
